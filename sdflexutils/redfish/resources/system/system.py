@@ -1,4 +1,4 @@
-# Copyright 2015 Hewlett-Packard Development Company, L.P.
+# Copyright 2018 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -12,25 +12,17 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""Logger utility for sdflexutils"""
+__author__ = 'HPE'
 
-import logging
-
-
-base_logger = logging.getLogger('sdflexutils')
-base_logger.addHandler(logging.NullHandler())
+from sushy.resources import base
+from sushy.resources.system import system
 
 
-def get_logger(name):
-    """Return a logger with the specified name
+class HPESystem(system.System):
+    """Class that extends the functionality of System resource class
 
-    If no name is specified then it returns the base logger
-    with the name, 'sdflexutils'.
-
-    :param name: logger name
+    This class extends the functionality of System resource class
+    from sushy
     """
-    if not name:
-        return base_logger
 
-    logger = logging.getLogger(name)
-    return logger
+    model = base.Field(['Model'])

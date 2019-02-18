@@ -21,4 +21,3 @@ class BaseTest(base.BaseTestCase):
     def setUp(self):
         super(BaseTest, self).setUp()
         self.init_test_conf()
-

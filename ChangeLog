@@ -1,6 +1,8 @@
 CHANGES
 =======
 
+* Adding SDFlexUtils to the library
+* Adding tox.ini
 * Trivial change
 * Update README.md
 * required changes for library installation

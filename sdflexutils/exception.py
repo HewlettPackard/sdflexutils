@@ -1,4 +1,4 @@
-# Copyright 2014 Hewlett-Packard Development Company, L.P.
+# Copyright 2019 Hewlett-Packard Development Company, L.P.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -40,105 +40,27 @@ class InvalidInputError(Exception):
         super(InvalidInputError, self).__init__(message)
 
 
-# Ths class can be dropped for hawks2
-class IloError(ProliantUtilsException):
+class SDFlexError(SDFlexUtilsException):
     """Base Exception.
 
     This exception is used when a problem is encountered in
     executing an operation on the RMC.
     """
     def __init__(self, message, errorcode=None):
-        super(IloError, self).__init__(message)
+        super(SDFlexError, self).__init__(message)
 
 
-# Ths class can be dropped for hawks2
-class IloClientInternalError(IloError):
-    """Internal Error from IloClient.
-
-    This exception is raised when iLO client library fails to
-    communicate properly with the iLO.
-    """
-    def __init__(self, message, errorcode=None):
-        super(IloClientInternalError, self).__init__(message)
-
-
-# Ths class can be dropped for hawks2
-class IloCommandNotSupportedError(IloError):
-    """Command not supported on the platform.
-
-    This exception is raised when iLO client library fails to
-    communicate properly with the iLO
-    """
-    def __init__(self, message, errorcode=None):
-        super(IloCommandNotSupportedError, self).__init__(message)
-
-
-# Ths class can be dropped for hawks2
-class IloCommandNotSupportedInBiosError(IloCommandNotSupportedError):
-    """Command not supported on the bios boot mode.
-
-    This exception is raised when iLO client library fails to
-    communicate properly with the iLO
-    """
-    def __init__(self, message, errorcode=None):
-        super(IloCommandNotSupportedInBiosError, self).__init__(message)
-
-
-# Ths class can be dropped for hawks2
-class IloLogicalDriveNotFoundError(IloError):
-    """Logical drive not found error.
-
-    This exception is raised when iLO client library unable to find
-    any logical drive on storage controller
-    """
-    def __init__(self, message, errorcode=None):
-        super(IloLogicalDriveNotFoundError, self).__init__(message)
-
-
-# Ths class can be dropped for hawks2
-class IloLoginFailError(IloError):
-    """iLO Login Failed.
-
-    This exception is used to communicate a login failure to
-    the caller.
-    """
-    messages = ['User login name was not found',
-                'Login failed', 'Login credentials rejected']
-    statuses = [0x005f, 0x000a]
-    message = 'Authorization Failed'
-
-    def __init__(self, message, errorcode=None):
-        super(IloLoginFailError, self).__init__(message)
-
-
-# Ths class can be dropped for hawks2
-class IloConnectionError(IloError):
-    """Cannot connect to iLO.
+class SDFlexConnectionError(SDFlexError):
+    """Cannot connect to SDFlex.
 
     This exception is used to communicate an HTTP connection
-    error from the iLO to the caller.
+    error from the SDFlex to the caller.
     """
     def __init__(self, message):
-        super(IloConnectionError, self).__init__(message)
-
-# This is not merged with generic InvalidInputError because
-# of backward-compatibility reasons. If we changed this,
-# use-cases of excepting 'IloError' to catch 'IloInvalidInputError'
-# will be broken.
+        super(SDFlexConnectionError, self).__init__(message)
 
 
-# Ths class can be dropped for hawks2
-class IloInvalidInputError(IloError):
-    """Invalid Input passed.
-
-    This exception is used when invalid inputs are passed to
-    the APIs exposed by this module.
-    """
-    def __init__(self, message):
-        super(IloInvalidInputError, self).__init__(message)
-
-
-class HPSSAException(ProliantUtilsException):
+class HPSSAException(SDFlexUtilsException):
 
     message = "An exception occured in ssa module"
 
@@ -160,80 +82,3 @@ class HPSSAOperationError(HPSSAException):
 
     message = ("An error was encountered while doing ssa configuration: "
                "%(reason)s.")
-
-
-# Ths class can be dropped for hawks2
-class ImageExtractionFailed(ProliantUtilsException):
-    message = "Failed to extract image %(image_ref)s, reason: %(reason)s"
-
-    def __init__(self, message=None, **kwargs):
-        if not message:
-            message = self.message % kwargs
-
-        super(ImageExtractionFailed, self).__init__(message)
-
-
-# Ths class can be dropped for hawks2
-class IloSNMPInvalidInputFailure(IloError):
-    message = "Failed to do SNMP retreival %(reason)s"
-
-    def __init__(self, message=None, **kwargs):
-        if not message:
-            message = self.message % kwargs
-
-        super(IloSNMPInvalidInputFailure, self).__init__(message)
-
-# Ths class can be dropped for hawks2
-class IloSNMPExceptionFailure(IloError):
-    message = "SNMP library failed %(reason)s"
-
-    def __init__(self, message=None, **kwargs):
-        if not message:
-            message = self.message % kwargs
-
-        super(IloSNMPExceptionFailure, self).__init__(message)
-
-
-class ImageRefValidationFailed(SDFlexUtilsException):
-    message = ("Validation of image href %(image_href)s failed, "
-               "reason: %(reason)s")
-
-    def __init__(self, message=None, **kwargs):
-        if not message:
-            message = self.message % kwargs
-
-        super(ImageRefValidationFailed, self).__init__(message)
-
-
-class SUMOperationError(SDFlexUtilsException):
-    """SUM based firmware update operation error.
-
-    This exception is used when a problem is encountered in
-    executing a SUM operation.
-    """
-
-    message = ("An error occurred while performing SUM based firmware "
-               "update, reason: %(reason)s")
-
-    def __init__(self, message=None, **kwargs):
-        if not message:
-            message = self.message % kwargs
-
-        super(SUMOperationError, self).__init__(message)
-
-
-class RedfishError(ProliantUtilsException):
-    """Basic exception for errors raised by Redfish operations."""
-
-    message = None
-
-    def __init__(self, **kwargs):
-        if self.message and kwargs:
-            self.message = self.message % kwargs
-
-        super(RedfishError, self).__init__(self.message)
-
-
-class MissingAttributeError(RedfishError):
-    message = ('The attribute %(attribute)s is missing from the '
-               'resource %(resource)s')

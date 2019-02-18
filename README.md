@@ -1,3 +1,1 @@
-# sdflexutils
-
-Utility Library for Hawks2.
+README.rst

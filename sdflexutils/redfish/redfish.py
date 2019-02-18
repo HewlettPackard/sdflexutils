@@ -1,0 +1,165 @@
+# Copyright 2018 Hewlett Packard Enterprise Development LP
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+__author__ = 'HPE'
+
+
+import sushy
+from sushy import auth
+from sdflexutils import exception
+from sdflexutils import log
+from sdflexutils.redfish import main
+
+"""
+Class specific for Redfish APIs.
+"""
+
+GET_POWER_STATE_MAP = {
+    sushy.SYSTEM_POWER_STATE_ON: 'ON',
+    sushy.SYSTEM_POWER_STATE_POWERING_ON: 'ON',
+    sushy.SYSTEM_POWER_STATE_OFF: 'OFF',
+    sushy.SYSTEM_POWER_STATE_POWERING_OFF: 'OFF'
+}
+
+POWER_RESET_MAP = {
+    'ON': sushy.RESET_ON,
+    'OFF': sushy.RESET_FORCE_OFF,
+}
+
+LOG = log.get_logger(__name__)
+
+
+class RedfishOperations(object):
+    """Operations supported on redfish based hardware.
+
+    This class holds APIs which are currently supported via Redfish mode
+    of operation. This is a growing list which needs to be updated as and when
+    the existing API/s are implemented.
+    """
+
+    def __init__(self, redfish_controller_ip, username, password,
+                 partition_id, bios_password=None, cacert=None,
+                 root_prefix='/redfish/v1/'):
+        """A class representing supported RedfishOperations
+
+        :param redfish_controller_ip: The ip address of the Redfish controller.
+        :param username: User account with admin/server-profile access
+            privilege
+        :param password: User account password
+        :param bios_password: bios password
+        :param cacert: a path to a CA_BUNDLE file or directory with
+            certificates of trusted CAs. If set to None, the driver will
+            ignore verifying the SSL certificate; if it's a path the driver
+            will use the specified certificate or one of the certificates in
+            the directory. Defaults to None.
+        :param root_prefix: The default URL prefix. This part includes
+            the root service and version. Defaults to /redfish/v1
+        """
+        LOG.debug('Redfish address: %s', redfish_controller_ip)
+        verify = False if cacert is None else cacert
+
+        # for error reporting purpose
+        self.host = redfish_controller_ip
+        self.partition_id = partition_id
+
+        try:
+            basic_auth = auth.BasicAuth(username=username, password=password)
+            self._sushy = main.HPESushy(redfish_controller_ip, verify=verify,
+                                        auth=basic_auth)
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('The Redfish controller at "%(controller)s" has '
+                          'thrown error. Error %(error)s') %
+                   {'controller': redfish_controller_ip, 'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexConnectionError(msg)
+
+    def _(self, msg):
+        """Prepends host information if available to msg and returns it."""
+        try:
+            return "[SDFlex %s] %s" % (self.host, msg)
+        except AttributeError:
+            return "[SDFlex <unknown>] %s" % msg
+
+    def _get_sushy_system(self):
+        """Get the sushy system for system_id
+
+        :param system_id: The identity of the System resource
+        :returns: the Sushy system instance
+        :raises: SDFlexError
+        """
+        try:
+            return self._sushy.get_system(self.partition_id)
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('The Redfish System "%(partition_id)s" was '
+                          'not found.Error %(error)s') %
+                   {'partition_id': self.partition_id, 'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
+
+    def get_host_power_status(self):
+        """Request the power state of the server.
+
+        :returns: Power State of the server, 'ON' or 'OFF'
+        :raises: SDFlexError, on an error from SDFlex.
+        """
+        sushy_system = self._get_sushy_system()
+        return GET_POWER_STATE_MAP.get(sushy_system.power_state)
+
+    def reset_server(self):
+        """Resets the server.
+
+        :raises: SDFlexError, on an error from SDFlex.
+        """
+        sushy_system = self._get_sushy_system()
+        try:
+            sushy_system.reset_system(sushy.RESET_FORCE_RESTART)
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('The Redfish controller failed to reset server. '
+                          'Error %(error)s') %
+                   {'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
+
+    def set_host_power(self, target_value):
+        """Sets the power state of the system.
+
+        :param target_value: The target value to be set. Value can be:
+            'ON' or 'OFF'.
+        :raises: SDFlexError, on an error from SDFlex.
+        :raises: InvalidInputError, if the target value is not
+            allowed.
+        """
+        if target_value not in POWER_RESET_MAP:
+            msg = ('The parameter "%(parameter)s" value "%(target_value)s" is '
+                   'invalid. Valid values are: %(valid_power_values)s' %
+                   {'parameter': 'target_value', 'target_value': target_value,
+                    'valid_power_values': POWER_RESET_MAP.keys()})
+            raise exception.InvalidInputError(msg)
+
+        # Check current power status, do not act if it's in requested state.
+        current_power_status = self.get_host_power_status()
+        if current_power_status == target_value:
+            LOG.debug(self._("Node is already in '%(target_value)s' power "
+                             "state."), {'target_value': target_value})
+            return
+
+        sushy_system = self._get_sushy_system()
+        try:
+            sushy_system.reset_system(POWER_RESET_MAP[target_value])
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('The Redfish controller failed to set power state '
+                          'of server to %(target_value)s. Error %(error)s') %
+                   {'target_value': target_value, 'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
