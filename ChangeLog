@@ -1,6 +1,7 @@
 CHANGES
 =======
 
+* Secure boot enablement code in sdflexutils
 * Adding SDFlexUtils to the library
 * Adding tox.ini
 * Trivial change

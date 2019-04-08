@@ -1,4 +1,4 @@
-# Copyright 2018 Hewlett Packard Enterprise Development LP
+# Copyright 2019 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -14,8 +14,10 @@
 
 __author__ = 'HPE'
 
-from sushy.resources import base
+from sdflexutils.redfish.resources.system import secure_boot
+from sdflexutils.redfish import utils
 from sushy.resources.system import system
+from sushy import utils as sushy_utils
 
 
 class HPESystem(system.System):
@@ -25,4 +27,16 @@ class HPESystem(system.System):
     from sushy
     """
 
-    model = base.Field(['Model'])
+    _secure_boot = None  # ref to SecureBoot instance
+
+    @property
+    @sushy_utils.cache_it
+    def secure_boot(self):
+        """Property to provide reference to `SecureBoot` instance
+
+        It is calculated once when the first time it is queried. On refresh,
+        this property gets reset.
+        """
+        return secure_boot.SecureBoot(
+            self._conn, utils.get_subresource_path_by(self, 'SecureBoot'),
+            redfish_version=self.redfish_version)

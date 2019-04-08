@@ -16,10 +16,10 @@
 import json
 
 import mock
-import testtools
-from sushy import connector as sushy_connector
 from sdflexutils.redfish import main
 from sdflexutils.redfish.resources.system import system
+from sushy import connector as sushy_connector
+import testtools
 
 
 class HPESushyTestCase(testtools.TestCase):
@@ -33,7 +33,8 @@ class HPESushyTestCase(testtools.TestCase):
                   'json_samples/root.json', 'r') as f:
             self.conn.get.return_value.json.return_value = (json.load(f))
         self.hpe_sushy = main.HPESushy('https://1.2.3.4',
-                                       username='foo',password='bar',verify=True)
+                                       username='foo', password='bar',
+                                       verify=True)
         mock_connector.assert_called_once_with(
             'https://1.2.3.4', verify=True)
 
@@ -41,7 +42,6 @@ class HPESushyTestCase(testtools.TestCase):
         self.assertRaises(
             ValueError, main.HPESushy, 'https://1.2.3.4',
             'foo', 'bar', auth=mock.MagicMock())
-
 
     @mock.patch.object(system, 'HPESystem', autospec=True)
     def test_get_system(self, mock_system):

@@ -1,4 +1,4 @@
-# Copyright 2019 Hewlett-Packard Development Company, L.P.
+# Copyright 2019 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -24,10 +24,6 @@ class InvalidInputError(Exception):
 
     message = "Invalid Input: %(reason)s"
 
-    # Note(deray): Not mandating the user to provide the ``reason`` attribute
-    # parameter while raising InvalidInputError exception. This is because of
-    # backward-compatibility reasons. See its unit test file to know about its
-    # different ways of usage.
     def __init__(self, message=None, **kwargs):
 
         if not message:
@@ -58,6 +54,33 @@ class SDFlexConnectionError(SDFlexError):
     """
     def __init__(self, message):
         super(SDFlexConnectionError, self).__init__(message)
+
+
+class SDFlexCommandNotSupportedError(SDFlexError):
+    """Command not supported on the platform.
+
+    This exception is raised when SDFlex client library fails to
+    communicate properly with the sdflexrmc
+    """
+    def __init__(self, message, errorcode=None):
+        super(SDFlexCommandNotSupportedError, self).__init__(message)
+
+
+class RedfishError(SDFlexUtilsException):
+    """Basic exception for errors raised by Redfish operations."""
+
+    message = None
+
+    def __init__(self, **kwargs):
+        if self.message and kwargs:
+            self.message = self.message % kwargs
+
+        super(RedfishError, self).__init__(self.message)
+
+
+class MissingAttributeError(RedfishError):
+    message = ('The attribute %(attribute)s is missing from the '
+               'resource %(resource)s')
 
 
 class HPSSAException(SDFlexUtilsException):

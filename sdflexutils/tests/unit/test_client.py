@@ -1,4 +1,4 @@
-# Copyright 2019 Hewlett-Packard Development Company, L.P.
+# Copyright 2019 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -14,10 +14,9 @@
 """Test class for Client Module."""
 
 import mock
-import testtools
 from sdflexutils import client
-from sdflexutils import exception
 from sdflexutils.redfish import redfish
+import testtools
 
 
 class TestSDFlexClient(testtools.TestCase):
@@ -26,10 +25,13 @@ class TestSDFlexClient(testtools.TestCase):
     def setUp(self, redfish_mock):
         super(TestSDFlexClient, self).setUp()
         self.redfish_return_mock = redfish_mock.return_value
-        self.sdlfex_client = client.SDFlexClient("1.2.3.4", "admin", "Admin",
-            "redfish/v1/Systems/Partition1", cacert=None)
+        self.sdlfex_client = (
+            client.SDFlexClient("1.2.3.4", "admin", "Admin",
+                                "redfish/v1/Systems/Partition1",
+                                cacert=None))
 
     def test_get_host_power_status(self):
-        redfish_get_host_power_mock = self.redfish_return_mock.get_host_power_status
+        redfish_get_host_power_mock = (
+            self.redfish_return_mock.get_host_power_status)
         self.sdlfex_client.get_host_power_status()
         redfish_get_host_power_mock.assert_called_once_with()

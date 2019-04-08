@@ -1,4 +1,4 @@
-# Copyright 2017 Hewlett Packard Enterprise Development LP
+# Copyright 2019 Hewlett Packard Enterprise Development LP
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -19,6 +19,7 @@ import mock
 from sdflexutils import exception
 from sdflexutils.redfish import main
 from sdflexutils.redfish import redfish
+from sdflexutils.redfish.resources.system import constants as sys_cons
 import sushy
 import testtools
 
@@ -101,3 +102,67 @@ class RedfishOperationsTestCase(testtools.TestCase):
             exception.InvalidInputError,
             'The parameter "target_value" value "Off" is invalid.',
             self.sdflex_client.set_host_power, 'Off')
+
+    @mock.patch.object(redfish.LOG, 'debug', autospec=True)
+    def test_get_secure_boot_mode(self, log_debug_mock):
+        sushy_system_mock = self.sushy.get_system.return_value
+        type(sushy_system_mock.secure_boot).current_boot = mock.PropertyMock(
+            return_value=sys_cons.SECUREBOOT_CURRENT_BOOT_ENABLED)
+        self.sdflex_client.get_secure_boot_mode()
+        log_debug_mock.assert_called_once_with(
+            '[SDFlex https://1.2.3.4] Secure boot is Enabled')
+
+        log_debug_mock.reset_mock()
+        type(sushy_system_mock.secure_boot).current_boot = mock.PropertyMock(
+            return_value=sys_cons.SECUREBOOT_CURRENT_BOOT_DISABLED)
+        self.sdflex_client.get_secure_boot_mode()
+        log_debug_mock.assert_called_once_with(
+            '[SDFlex https://1.2.3.4] Secure boot is Disabled')
+
+    def test_get_secure_boot_mode_on_fail(self):
+        sushy_system_mock = self.sushy.get_system.return_value
+        type(sushy_system_mock).secure_boot = mock.PropertyMock(
+            side_effect=sushy.exceptions.SushyError)
+        self.assertRaisesRegex(
+            exception.SDFlexCommandNotSupportedError,
+            'The Redfish controller failed to provide '
+            'information about secure boot on the server.',
+            self.sdflex_client.get_secure_boot_mode)
+
+    def test__has_secure_boot(self):
+        sushy_system_mock = self.sushy.get_system.return_value
+        type(sushy_system_mock).secure_boot = mock.PropertyMock(
+            return_value='Hey I am secure_boot')
+        self.assertTrue(self.sdflex_client._has_secure_boot())
+
+    def test__has_secure_boot_on_fail(self):
+        sushy_system_mock = self.sushy.get_system.return_value
+        type(sushy_system_mock).secure_boot = mock.PropertyMock(
+            side_effect=sushy.exceptions.SushyError)
+        self.assertFalse(self.sdflex_client._has_secure_boot())
+        type(sushy_system_mock).secure_boot = mock.PropertyMock(
+            side_effect=exception.MissingAttributeError)
+        self.assertFalse(self.sdflex_client._has_secure_boot())
+
+    def test_set_secure_boot_mode(self):
+        self.sdflex_client.set_secure_boot_mode(True)
+        secure_boot_mock = self.sushy.get_system.return_value.secure_boot
+        secure_boot_mock.enable_secure_boot.assert_called_once_with(True)
+
+    def test_set_secure_boot_mode_on_fail(self):
+        secure_boot_mock = self.sushy.get_system.return_value.secure_boot
+        secure_boot_mock.enable_secure_boot.side_effect = (
+            sushy.exceptions.SushyError)
+        self.assertRaisesRegex(
+            exception.SDFlexError,
+            'The Redfish controller failed to set secure boot settings '
+            'on the server.',
+            self.sdflex_client.set_secure_boot_mode, True)
+
+    def test_set_secure_boot_mode_for_invalid_value(self):
+        secure_boot_mock = self.sushy.get_system.return_value.secure_boot
+        secure_boot_mock.enable_secure_boot.side_effect = (
+            exception.InvalidInputError('Invalid input'))
+        self.assertRaises(
+            exception.SDFlexError,
+            self.sdflex_client.set_secure_boot_mode, 'some-non-boolean')

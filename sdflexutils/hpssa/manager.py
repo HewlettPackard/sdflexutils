@@ -1,4 +1,4 @@
-# Copyright 2015 Hewlett-Packard Development Company, L.P.
+# Copyright 2019 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -18,8 +18,7 @@ import time
 
 import jsonschema
 from jsonschema import exceptions as json_schema_exc
-
-from sdflextutils import exception
+from sdflexutils import exception
 from sdflexutils.hpssa import constants
 from sdflexutils.hpssa import disk_allocator
 from sdflexutils.hpssa import objects

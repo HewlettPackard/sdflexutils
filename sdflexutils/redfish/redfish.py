@@ -1,4 +1,4 @@
-# Copyright 2018 Hewlett Packard Enterprise Development LP
+# Copyright 2019 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -14,12 +14,12 @@
 
 __author__ = 'HPE'
 
-
-import sushy
-from sushy import auth
 from sdflexutils import exception
 from sdflexutils import log
 from sdflexutils.redfish import main
+from sdflexutils.redfish.resources.system import constants as sys_cons
+import sushy
+from sushy import auth
 
 """
 Class specific for Redfish APIs.
@@ -36,6 +36,12 @@ POWER_RESET_MAP = {
     'ON': sushy.RESET_ON,
     'OFF': sushy.RESET_FORCE_OFF,
 }
+
+GET_SECUREBOOT_CURRENT_BOOT_MAP = {
+    sys_cons.SECUREBOOT_CURRENT_BOOT_ENABLED: True,
+    sys_cons.SECUREBOOT_CURRENT_BOOT_DISABLED: False
+}
+
 
 LOG = log.get_logger(__name__)
 
@@ -66,7 +72,9 @@ class RedfishOperations(object):
         :param root_prefix: The default URL prefix. This part includes
             the root service and version. Defaults to /redfish/v1
         """
-        LOG.debug('Redfish address: %s', redfish_controller_ip)
+        super(RedfishOperations, self).__init__()
+        address = (redfish_controller_ip)
+        LOG.debug('Redfish address: %s', address)
         verify = False if cacert is None else cacert
 
         # for error reporting purpose
@@ -161,5 +169,68 @@ class RedfishOperations(object):
             msg = (self._('The Redfish controller failed to set power state '
                           'of server to %(target_value)s. Error %(error)s') %
                    {'target_value': target_value, 'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
+
+    def get_secure_boot_mode(self):
+        """Get the status of secure boot.
+
+        :returns: True, if enabled, else False
+        :raises: SDFlexError, on an error from iLO.
+        :raises: SDFlexCommandNotSupportedError, if the command is not
+                 supported on the server.
+        """
+        sushy_system = self._get_sushy_system()
+        try:
+            secure_boot_enabled = GET_SECUREBOOT_CURRENT_BOOT_MAP.get(
+                sushy_system.secure_boot.current_boot)
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('The Redfish controller failed to provide '
+                          'information about secure boot on the server. '
+                          'Error: %(error)s') %
+                   {'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexCommandNotSupportedError(msg)
+
+        if secure_boot_enabled:
+            LOG.debug(self._("Secure boot is Enabled"))
+        else:
+            LOG.debug(self._("Secure boot is Disabled"))
+        return secure_boot_enabled
+
+    def _has_secure_boot(self):
+        try:
+            self._get_sushy_system().secure_boot
+        except (exception.MissingAttributeError, sushy.exceptions.SushyError):
+            return False
+        return True
+
+    def set_secure_boot_mode(self, secure_boot_enable):
+        """Enable/Disable secure boot on the server.
+
+        Resetting the server post updating this settings is needed
+        from the caller side to make this into effect.
+        :param secure_boot_enable: True, if secure boot needs to be
+               enabled for next boot, else False.
+        :raises: SDFlexError, on an error from SDFlex.
+        :raises: SDFlexCommandNotSupportedError, if the command is not
+                 supported on the server.
+        On SDFlex, installing the secureboot default keys is taken care by
+        redfish api while enabling the secureboot, no need to saperately
+        install the keys. Similarly, un-installing the secureboot default keys
+        is taken care by the redfish api while disabling the secureboot.
+        """
+        sushy_system = self._get_sushy_system()
+        try:
+            sushy_system.secure_boot.enable_secure_boot(secure_boot_enable)
+        except exception.InvalidInputError as e:
+            msg = (self._('Invalid input. Error %(error)s')
+                   % {'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('The Redfish controller failed to set secure '
+                          'boot settings on the server. Error: %(error)s')
+                   % {'error': str(e)})
             LOG.debug(msg)
             raise exception.SDFlexError(msg)

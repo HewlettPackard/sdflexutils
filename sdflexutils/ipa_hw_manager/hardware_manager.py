@@ -13,7 +13,6 @@
 # under the License.
 
 from ironic_python_agent import hardware
-
 from sdflexutils.hpssa import manager as hpssa_manager
 from sdflexutils.sum import sum_controller
 
