@@ -37,6 +37,7 @@ class HPESystem(system.System):
         It is calculated once when the first time it is queried. On refresh,
         this property gets reset.
         """
+
         return secure_boot.SecureBoot(
             self._conn, utils.get_subresource_path_by(self, 'SecureBoot'),
             redfish_version=self.redfish_version)

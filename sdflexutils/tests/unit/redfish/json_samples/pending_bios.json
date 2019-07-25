@@ -1,0 +1,11 @@
+{
+   "Default":{
+     "Attributes": {
+          "BootSlots": "3,5",
+          "HThread": "on",
+          "RASMode": "on",
+          "UrlBootFile": "tftp://1.2.3.4/tftp/bootx.efi",
+          "UrlBootFile2": "tftp://1.2.3.5/tftp/bootx.efi"
+    }
+  }
+}

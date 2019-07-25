@@ -16,6 +16,7 @@ __author__ = 'HPE'
 
 from sdflexutils.redfish.resources.system import system
 import sushy
+from sushy import connector as sushy_connector
 
 
 class HPESushy(sushy.Sushy):
@@ -49,10 +50,12 @@ class HPESushy(sushy.Sushy):
         :param auth: An authentication mechanism to utilize.
         :param connector: A user-defined connector object. Defaults to None.
         """
+
         self._root_prefix = root_prefix
         super(HPESushy, self).__init__(
             base_url, username, password,
-            root_prefix=root_prefix, verify=verify, auth=auth)
+            root_prefix=root_prefix, verify=verify, auth=auth,
+            connector=sushy_connector.Connector(base_url, verify=verify))
 
     def get_system(self, identity):
         """Given the identity return a HPESystem object
@@ -60,5 +63,6 @@ class HPESushy(sushy.Sushy):
         :param identity: The identity of the System resource
         :returns: The System object
         """
+
         return system.HPESystem(self._conn, identity,
                                 redfish_version=self.redfish_version)

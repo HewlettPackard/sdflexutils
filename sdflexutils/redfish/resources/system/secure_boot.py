@@ -46,7 +46,7 @@ class SecureBoot(base.ResourceBase):
         :param secure_boot_enable: True, if secure boot needs to be
                enabled for next boot, else False.
         :raises: InvalidInputError, if the validation of the input fails
-        :raises: SushyError, on an error from iLO.
+        :raises: SushyError, on an error from sdflex-rmc.
         On SDFlex, installing the secureboot default keys is taken care by
         redfish api while enabling the secureboot, no need to saperately
         install the keys. Similarly, un-installing the secureboot default

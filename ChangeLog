@@ -1,9 +1,14 @@
 CHANGES
 =======
 
+* Enablement of Bios Setting capabilities in SDFlexutils
+* Bug fix to remove sum references and fix copyright
+* Adding Python3 support for Tox
 * Secure boot enablement code in sdflexutils
 * Adding SDFlexUtils to the library
 * Adding tox.ini
+* Reversing Test Merge
+* Test merger patch
 * Trivial change
 * Update README.md
 * required changes for library installation

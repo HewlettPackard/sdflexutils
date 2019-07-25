@@ -18,6 +18,7 @@ from sdflexutils import exception
 from sdflexutils import log
 from sdflexutils.redfish import main
 from sdflexutils.redfish.resources.system import constants as sys_cons
+from sdflexutils import utils as common_utils
 import sushy
 from sushy import auth
 
@@ -176,7 +177,7 @@ class RedfishOperations(object):
         """Get the status of secure boot.
 
         :returns: True, if enabled, else False
-        :raises: SDFlexError, on an error from iLO.
+        :raises: SDFlexError, on an error from sdflex-rmc.
         :raises: SDFlexCommandNotSupportedError, if the command is not
                  supported on the server.
         """
@@ -232,5 +233,89 @@ class RedfishOperations(object):
             msg = (self._('The Redfish controller failed to set secure '
                           'boot settings on the server. Error: %(error)s')
                    % {'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
+
+    def get_current_bios_settings(self, only_allowed_settings=True):
+        """Get current BIOS settings.
+
+        :param: only_allowed_settings: True when only allowed BIOS settings
+                are to be returned. If False, All the BIOS settings supported
+                by sdflex-rmc are returned.
+        :return: a dictionary of current BIOS settings is returned. Depending
+                 on the 'only_allowed_settings', either only the allowed
+                 settings are returned or all the supported settings are
+                 returned.
+        :raises: SDFlexError, on an error from sdflex-rmc
+        """
+
+        sushy_system = self._get_sushy_system()
+        try:
+            current_settings = sushy_system.bios.json
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('The current BIOS Settings were not found. Error '
+                          '%(error)s') %
+                   {'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
+
+        attributes = current_settings.get("Attributes")
+        return attributes
+
+    def get_pending_bios_settings(self, only_allowed_settings=True):
+        """Get pending BIOS settings.
+
+        :param: only_allowed_settings: True when only allowed BIOS settings are
+                to be returned. If False, All the BIOS settings supported by
+                sdflex-rmc are returned.
+        :return: a dictionary of pending BIOS settings is returned. Depending
+                 on the 'only_allowed_settings', either only the allowed
+                 settings are returned or all the supported settings are
+                 returned.
+        :raises: SDFlexError, on an error from sdflex-rmc.
+        """
+
+        sushy_system = self._get_sushy_system()
+        try:
+            settings = sushy_system.bios.pending_attributes
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('The pending BIOS Settings were not found. Error '
+                          '%(error)s') %
+                   {'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
+
+        attributes = settings.get("Attributes")
+        return attributes
+
+    def set_bios_settings(self, data=None):
+        """Sets current BIOS settings to the provided data.
+
+        :param: only_allowed_settings: True when only allowed BIOS settings
+                are to be set. If False, all the BIOS settings supported by
+                sdflex-rmc and present in the 'data' are set.
+        :param: data: a dictionary of BIOS settings to be applied. Depending
+                on the 'only_allowed_settings', either only the allowed
+                settings are set or all the supported settings that are in the
+                'data' are set.
+        :raises: SDFlexError, on an error from sdflex-rmc.
+        """
+
+        if not data:
+            raise exception.SDFlexError("Could not apply settings with"
+                                        " empty data")
+        sushy_system = self._get_sushy_system()
+
+        try:
+            for key in data.keys():
+                sushy_system.bios.set_attribute(key, data[key])
+        except sushy.exceptions.SushyError as e:
+            message_extended_info = e.body.get('@Message.ExtendedInfo')
+            error_message = message_extended_info[0]['Message']
+
+            msg = (self._("Setting the value of Bios attribute "
+                          "'%(atrribute)s' is not succesfull. "
+                          "Error: %(error)s") %
+                   {'error': str(error_message), 'atrribute': key})
             LOG.debug(msg)
             raise exception.SDFlexError(msg)

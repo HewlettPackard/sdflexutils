@@ -1,0 +1,11 @@
+{
+   "Default":{
+     "Attributes": {
+          "BootSlots": "3,5",
+          "HThread": "on",
+          "RASMode": "on",
+          "UrlBootFile": "",
+          "UrlBootFile2": ""
+    }
+  }
+}

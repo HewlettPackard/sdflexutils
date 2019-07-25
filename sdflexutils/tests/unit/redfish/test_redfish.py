@@ -14,6 +14,8 @@
 #    under the License.
 
 
+import json
+
 import ddt
 import mock
 from sdflexutils import exception
@@ -166,3 +168,108 @@ class RedfishOperationsTestCase(testtools.TestCase):
         self.assertRaises(
             exception.SDFlexError,
             self.sdflex_client.set_secure_boot_mode, 'some-non-boolean')
+
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_get_current_bios_settings(self, get_system_mock):
+        with open('sdflexutils/tests/unit/redfish/'
+                  'json_samples/bios.json', 'r') as f:
+            jsonval = json.loads(f.read()).get("Default")
+        get_system_mock.return_value.bios.json = jsonval
+        actual_bios_data = self.sdflex_client.get_current_bios_settings()
+        expected = {'BootSlots': "3,5", "HThread": "on", "RASMode": "on",
+                    'UrlBootFile2': '', 'UrlBootFile': ''}
+        self.assertEqual(expected, actual_bios_data)
+
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_get_current_bios_settings_allow_all(self, get_system_mock):
+        with open('sdflexutils/tests/unit/redfish/'
+                  'json_samples/bios.json', 'r') as f:
+            jsonval = json.loads(f.read()).get("Default")
+        get_system_mock.return_value.bios.json = jsonval
+        actual = self.sdflex_client.get_current_bios_settings(False)
+        expected = {'RASMode': 'on', 'UrlBootFile2': '',
+                    'UrlBootFile': '', 'BootSlots': '3,5', 'HThread': 'on'}
+        self.assertEqual(expected, actual)
+
+    @mock.patch.object(redfish.RedfishOperations, 'get_current_bios_settings',
+                       autospec=True)
+    def test_get_current_bios_settings_fail(self, mock_bios_data):
+        mock_bios_data.side_effect = sushy.exceptions.SushyError
+        self.assertRaises(
+            sushy.exceptions.SushyError,
+            self.sdflex_client.get_current_bios_settings)
+
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_get_pending_bios_settings(self, get_system_mock):
+        with open('sdflexutils/tests/unit/redfish/json_samples/'
+                  'pending_bios.json', 'r') as f:
+            jsonval = json.loads(f.read()).get("Default")
+        get_system_mock.return_value.bios.pending_attributes = jsonval
+        expected = {'BootSlots': "3,5", "HThread": "on", "RASMode": "on",
+                    'UrlBootFile': 'tftp://1.2.3.4/tftp/bootx.efi',
+                    'UrlBootFile2': 'tftp://1.2.3.5/tftp/bootx.efi'}
+        actual = self.sdflex_client.get_pending_bios_settings()
+        self.assertEqual(expected, actual)
+
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_get_pending_bios_settings_allow_all(self, get_system_mock):
+        with open('sdflexutils/tests/unit/redfish/'
+                  'json_samples/pending_bios.json', 'r') as f:
+            jsonval = json.loads(f.read()).get("Default")
+        get_system_mock.return_value.bios.pending_attributes = jsonval
+        expected = {'RASMode': 'on',
+                    'BootSlots': '3,5', 'HThread': 'on',
+                    'UrlBootFile': 'tftp://1.2.3.4/tftp/bootx.efi',
+                    'UrlBootFile2': 'tftp://1.2.3.5/tftp/bootx.efi'}
+        actual = self.sdflex_client.get_pending_bios_settings(False)
+        self.assertEqual(expected, actual)
+
+    @mock.patch.object(redfish.RedfishOperations, 'get_pending_bios_settings',
+                       autospec=True)
+    def test_get_pending_bios_settings_fail(self, mock_pending_bios_data):
+        mock_pending_bios_data.side_effect = sushy.exceptions.SushyError
+        self.assertRaises(
+            sushy.exceptions.SushyError,
+            self.sdflex_client.get_pending_bios_settings)
+
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_set_bios_settings(self, get_system_mock):
+        with open('sdflexutils/tests/unit/redfish/json_samples/'
+                  'pending_bios.json', 'r') as f:
+            jsonval = json.loads(f.read()).get("Default")
+        get_system_mock.return_value.bios.pending_attributes = jsonval
+        data = {'RASMode': 'on', 'BootSlots': '3,5', 'HThread': 'on',
+                'UrlBootFile': u'tftp://1.2.3.4/tftp/bootx.efi',
+                'UrlBootFile2': u'tftp://1.2.3.5/tftp/bootx.efi'}
+        self.sdflex_client.set_bios_settings(data)
+        pending_bios_settings = self.sdflex_client.get_pending_bios_settings()
+        self.assertEqual(data, pending_bios_settings)
+
+    @mock.patch.object(redfish.RedfishOperations, 'set_bios_settings',
+                       autospec=True)
+    def test_set_bios_settings_unsupported_settings(self,
+                                                    mock_set_bios_setting):
+        mock_set_bios_setting.side_effect = sushy.exceptions.SushyError
+        data = {'Ip': u'1.2.3.5'}
+        self.assertRaises(
+            sushy.exceptions.SushyError,
+            self.sdflex_client.set_bios_settings, data)
+
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_set_bios_settings_empty_data(self, get_system_mock):
+        with open('sdflexutils/tests/unit/redfish/'
+                  'json_samples/pending_bios.json', 'r') as f:
+            jsonval = json.loads(f.read()).get("Default")
+        get_system_mock.return_value.bios.pending_attributes = jsonval
+        data = None
+        self.assertRaises(
+            exception.SDFlexError,
+            self.sdflex_client.set_bios_settings, data)
+
+    @mock.patch.object(redfish.RedfishOperations, 'set_bios_settings',
+                       autospec=True)
+    def test_set_bios_settings_fail(self, mock_pending_bios_data):
+        mock_pending_bios_data.side_effect = sushy.exceptions.SushyError
+        self.assertRaises(
+            sushy.exceptions.SushyError,
+            self.sdflex_client.set_bios_settings)
