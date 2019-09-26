@@ -135,7 +135,7 @@ def _ssacli(*args, **kwargs):
     :returns: a tuple containing the stdout and stderr after running
         the process.
     :raises: HPSSAOperationError, if some error was encountered and
-        dont_dont_transform_to_hpssa_exception was set to False.
+        dont_transform_to_hpssa_exception was set to False.
     :raises: OSError or processutils.ProcessExecutionError if execution
         failed and dont_transform_to_hpssa_exception was set to True.
     """
@@ -143,13 +143,9 @@ def _ssacli(*args, **kwargs):
     dont_transform_to_hpssa_exception = kwargs.get(
         'dont_transform_to_hpssa_exception', False)
     kwargs.pop('dont_transform_to_hpssa_exception', None)
-
     try:
         if os.path.exists("/usr/sbin/ssacli"):
             stdout, stderr = processutils.execute("ssacli",
-                                                  *args, **kwargs)
-        else:
-            stdout, stderr = processutils.execute("hpssacli",
                                                   *args, **kwargs)
     except (OSError, processutils.ProcessExecutionError) as e:
         if 'No controllers detected' in str(e):
