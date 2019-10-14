@@ -18,7 +18,6 @@ from sdflexutils import exception
 from sdflexutils import log
 from sdflexutils.redfish import main
 from sdflexutils.redfish.resources.system import constants as sys_cons
-from sdflexutils import utils as common_utils
 import sushy
 from sushy import auth
 
@@ -317,5 +316,23 @@ class RedfishOperations(object):
                           "'%(atrribute)s' is not succesfull. "
                           "Error: %(error)s") %
                    {'error': str(error_message), 'atrribute': key})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
+
+    def update_firmware(self, file_url, reinstall=False,
+                        exclude_npar_fw=False):
+        """Updates the given firmware on the server.
+
+        :param file_url: location of the raw firmware file.
+        :raises: SDFLexError, on an error from sdflexrmc.
+        """
+        try:
+            update_service_inst = self._sushy.get_update_service()
+            update_service_inst.flash_firmware(
+                self, file_url, reinstall, exclude_npar_fw)
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('The Redfish controller failed to update firmware '
+                          'with firmware %(file)s Error %(error)s') %
+                   {'file': file_url, 'error': str(e)})
             LOG.debug(msg)
             raise exception.SDFlexError(msg)

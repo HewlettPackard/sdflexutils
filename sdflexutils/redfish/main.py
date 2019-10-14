@@ -15,6 +15,8 @@
 __author__ = 'HPE'
 
 from sdflexutils.redfish.resources.system import system
+from sdflexutils.redfish.resources import update_service
+from sdflexutils.redfish import utils
 import sushy
 from sushy import connector as sushy_connector
 
@@ -66,3 +68,14 @@ class HPESushy(sushy.Sushy):
 
         return system.HPESystem(self._conn, identity,
                                 redfish_version=self.redfish_version)
+
+    def get_update_service(self):
+        """Return a HPEUpdateService object
+
+        :returns: The UpdateService object
+        """
+        update_service_url = utils.get_subresource_path_by(self,
+                                                           'UpdateService')
+        return (update_service.
+                HPEUpdateService(self._conn, update_service_url,
+                                 redfish_version=self.redfish_version))

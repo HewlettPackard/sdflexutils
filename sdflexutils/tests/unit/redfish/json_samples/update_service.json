@@ -1,0 +1,32 @@
+{
+   "@odata.context":"/redfish/v1/$metadata#UpdateService.UpdateService",
+   "@odata.id":"/redfish/v1/UpdateService",
+   "@odata.type":"#UpdateService.v1_2_0.UpdateService",
+   "Actions":{
+      "Oem":{
+         "Hpe":{
+            "#SDFlexUpdateService.UpdateAll":{
+               "@Redfish.ActionInfo":"/redfish/v1/UpdateService/SDFlexUpdateAllActionInfo",
+               "target":"/redfish/v1/UpdateService/Actions/SDFlexUpdateService.UpdateAll"
+            }
+         }
+      }
+   },
+   "FirmwareInventory":{
+      "@odata.id":"/redfish/v1/UpdateService/FirmwareInventory"
+   },
+   "Id":"UpdateService",
+   "Name":"Update Service",
+   "Oem":{
+      "Hpe":{
+         "@odata.type":"#HpeUpdateService.v1_0_0.HpeUpdateService",
+         "OnlineUpdatesSupported":true
+      }
+   },
+   "ServiceEnabled":true,
+   "Status":{
+      "Health":"OK",
+      "HealthRollup":"OK",
+      "State":"Enabled"
+   }
+}

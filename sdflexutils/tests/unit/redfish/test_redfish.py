@@ -273,3 +273,42 @@ class RedfishOperationsTestCase(testtools.TestCase):
         self.assertRaises(
             sushy.exceptions.SushyError,
             self.sdflex_client.set_bios_settings)
+
+    def test_update_firmware(self):
+        self.sdflex_client.update_firmware('fw_file_url')
+        (self.sushy.get_update_service.return_value.flash_firmware.
+         assert_called_once_with(self.sdflex_client, 'fw_file_url',
+                                                     False, False))
+
+    def test_update_firmware_reinstall(self):
+        self.sdflex_client.update_firmware('fw_file_url', True, False)
+        (self.sushy.get_update_service.return_value.flash_firmware.
+         assert_called_once_with(self.sdflex_client, 'fw_file_url',
+                                                     True, False))
+
+    def test_update_firmware_excludenparfw(self):
+        self.sdflex_client.update_firmware('fw_file_url', False, True)
+        (self.sushy.get_update_service.return_value.flash_firmware.
+         assert_called_once_with(self.sdflex_client, 'fw_file_url',
+                                                     False, True))
+
+    def test_update_firmware_reinstall_excludenparfw(self):
+        self.sdflex_client.update_firmware('fw_file_url', True, True)
+        (self.sushy.get_update_service.return_value.flash_firmware.
+         assert_called_once_with(self.sdflex_client, 'fw_file_url',
+                                                     True, True))
+
+    def test_update_firmware_flash_firmware_fail(self):
+        (self.sushy.get_update_service.return_value.
+         flash_firmware.side_effect) = sushy.exceptions.SushyError
+        self.assertRaisesRegex(
+            exception.SDFlexError,
+            'The Redfish controller failed to update firmware',
+            self.sdflex_client.update_firmware, 'fw_file_url')
+
+    def test_update_firmware_get_update_service_fail(self):
+        self.sushy.get_update_service.side_effect = sushy.exceptions.SushyError
+        self.assertRaisesRegex(
+            exception.SDFlexError,
+            'The Redfish controller failed to update firmware',
+            self.sdflex_client.update_firmware, 'fw_file_url')

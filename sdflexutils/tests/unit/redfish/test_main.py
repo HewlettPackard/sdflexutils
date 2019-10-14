@@ -18,6 +18,7 @@ import json
 import mock
 from sdflexutils.redfish import main
 from sdflexutils.redfish.resources.system import system
+from sdflexutils.redfish.resources import update_service
 from sushy import connector as sushy_connector
 import testtools
 
@@ -51,3 +52,12 @@ class HPESushyTestCase(testtools.TestCase):
         mock_system.assert_called_once_with(self.hpe_sushy._conn,
                                             '1234',
                                             self.hpe_sushy.redfish_version)
+
+    @mock.patch.object(update_service, 'HPEUpdateService', autospec=True)
+    def test_get_update_service(self, mock_update_service):
+        us_inst = self.hpe_sushy.get_update_service()
+        self.assertIsInstance(us_inst,
+                              update_service.HPEUpdateService.__class__)
+        mock_update_service.assert_called_once_with(
+            self.hpe_sushy._conn, "/redfish/v1/UpdateService",
+            redfish_version=self.hpe_sushy.redfish_version)
