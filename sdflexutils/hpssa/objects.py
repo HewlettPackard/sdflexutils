@@ -533,7 +533,7 @@ class RaidArray(object):
 
         # TODO(rameshg87): This always returns in MB, but confirm with
         # HPSSA folks.
-        match = re.search('Max: (\d+)', stdout)
+        match = re.search(r'Max: (\d+)', stdout)
         if not match:
             return False
 

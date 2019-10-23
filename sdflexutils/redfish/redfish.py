@@ -323,7 +323,11 @@ class RedfishOperations(object):
                         exclude_npar_fw=False):
         """Updates the given firmware on the server.
 
-        :param file_url: location of the raw firmware file.
+        :param: file_url: location of the firmware bundle.
+        :param: reinstall: to force re-install the firmware components
+                though the same version is present in the system.
+        :param: exclude_npar_fw: to exclude flashing npar firmware in case
+                someone wants only mamageability firmware to be updated.
         :raises: SDFLexError, on an error from sdflexrmc.
         """
         try:

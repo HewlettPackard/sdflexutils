@@ -16,6 +16,7 @@ import sys
 
 import mock
 from oslo_utils import importutils
+import six
 
 ironic_python_agent = importutils.try_import('ironic_python_agent')
 if not ironic_python_agent:
@@ -26,4 +27,4 @@ if not ironic_python_agent:
     ipa_mock.hardware.GenericHardwareManager = mock.MagicMock
     mock.MagicMock.erase_devices = mock.MagicMock(name='erase_devices')
     if 'sdflexutils.ipa_hw_manager' in sys.modules:
-        reload(sys.modules['sdflexutils.ipa_hw_manager'])
+        six.moves.reload(sys.modules['sdflexutils.ipa_hw_manager'])

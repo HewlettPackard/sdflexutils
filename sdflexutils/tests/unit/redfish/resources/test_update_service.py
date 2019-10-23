@@ -72,7 +72,11 @@ class HPEUpdateServiceTestCase(testtools.TestCase):
         # | WHEN |
         m = mock.MagicMock()
         m.status_code = '202'
-        m.content = '{"Messages": [], "Id": "1a86edf54cdd416e84b8b7bb86cd5c6d", "@odata.id": "/redfish/v1/TaskService/Taskedf54cdd416e84b8b7bb86cd5c6d", "TaskState": "Completed", "TaskStatus": "OK", "StartTime": "2019-08-23T10:48:k", "@odata.type": "#Task.v1_1_0.Task"}'  # noqa: E501
+        m.content = ('{"Messages": [], "Id": "1234",'
+                     '"@odata.id": "/redfish/v1/TaskService/TaskId/1234",'
+                     '"TaskState": "Completed", "TaskStatus": "OK",'
+                     '"StartTime": "2019-08-23T10:48:k",'
+                     '"@odata.type": "#Task.v1_1_0.Task"}')
         self.conn.post.return_value = m
         self.us_inst.flash_firmware(self.sdflex_client, file_url)
         # | THEN |

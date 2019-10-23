@@ -52,8 +52,8 @@ class HPESystemTestCase(testtools.TestCase):
         # | GIVEN |
         self.conn.get.return_value.json.reset_mock()
         with open(
-             'sdflexutils/tests/unit/redfish/json_samples/secure_boot.json',
-             'r') as f:
+                'sdflexutils/tests/unit/redfish/json_samples/secure_boot.json',
+                'r') as f:
             self.conn.get.return_value.json.return_value = (
                 json.loads(f.read())['default'])
         # | WHEN |
@@ -74,8 +74,8 @@ class HPESystemTestCase(testtools.TestCase):
     def test_secure_boot_on_refresh(self):
         # | GIVEN |
         with open(
-             'sdflexutils/tests/unit/redfish/json_samples/secure_boot.json',
-             'r') as f:
+                'sdflexutils/tests/unit/redfish/json_samples/secure_boot.json',
+                'r') as f:
             self.conn.get.return_value.json.return_value = (
                 json.loads(f.read())['default'])
         # | WHEN & THEN |
@@ -96,8 +96,8 @@ class HPESystemTestCase(testtools.TestCase):
 
         # | GIVEN |
         with open(
-             'sdflexutils/tests/unit/redfish/json_samples/secure_boot.json',
-             'r') as f:
+                'sdflexutils/tests/unit/redfish/json_samples/secure_boot.json',
+                'r') as f:
             self.conn.get.return_value.json.return_value = (
                 json.loads(f.read())['default'])
         # | WHEN & THEN |

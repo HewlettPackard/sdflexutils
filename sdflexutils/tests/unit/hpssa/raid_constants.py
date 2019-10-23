@@ -1094,13 +1094,13 @@ MSCC SmartRAID 3154-8e in Slot 2085
          Mount Points: None
          Logical Drive Label: 01F8D4F48A02F3004A0    B741
          Parity Group 1:
-            physicaldrive CN1:1:1 (port CN1:box 1:bay 1, SATA SSD, 480 GB, OK)
-            physicaldrive CN1:1:2 (port CN1:box 1:bay 2, SATA SSD, 480 GB, OK)
-            physicaldrive CN1:1:3 (port CN1:box 1:bay 3, SATA SSD, 480 GB, OK)
+           physicaldrive CN1:1:1 (port CN1:box 1:bay 1, SATA SSD, 480 GB, OK)
+           physicaldrive CN1:1:2 (port CN1:box 1:bay 2, SATA SSD, 480 GB, OK)
+           physicaldrive CN1:1:3 (port CN1:box 1:bay 3, SATA SSD, 480 GB, OK)
          Parity Group 2:
-            physicaldrive CN1:1:4 (port CN1:box 1:bay 4, SATA SSD, 480 GB, OK)
-            physicaldrive CN1:1:5 (port CN1:box 1:bay 5, SATA SSD, 480 GB, OK)
-            physicaldrive CN1:1:11 (port CN1:box 1:bay 11, SATA SSD, 480 GB, OK)
+           physicaldrive CN1:1:4 (port CN1:box 1:bay 4, SATA SSD, 480 GB, OK)
+           physicaldrive CN1:1:5 (port CN1:box 1:bay 5, SATA SSD, 480 GB, OK)
+           physicaldrive CN1:1:11 (port CN1:box 1:bay 11, SATA SSD, 480 GB, OK)
          Drive Type: Data
          LD Acceleration Method: I/O Bypass
 

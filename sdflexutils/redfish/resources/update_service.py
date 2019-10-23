@@ -58,8 +58,12 @@ class HPEUpdateService(base.ResourceBase):
                        exclude_npar_fw=False):
         """Perform firmware flashing on a redfish system
 
-        :param file_url: url to firmware bits.
-        :param redfish_inst: redfish instance
+        :param file_url: url to firmware bundle.
+        :param redfish_inst: redfish instance.
+        :param: reinstall: to force re-install the firmware components
+                though the same version is present in the system.
+        :param: exclude_npar_fw: to exclude flashing npar firmware in case
+                someone wants only mamageability firmware to be updated.
         :raises: SDFlexError, on an error from sdflex.
         """
         action_data = {
@@ -86,7 +90,9 @@ class HPEUpdateService(base.ResourceBase):
                                                      task_id, file_url):
         """Continuously polls for sdflex firmware update to complete.
 
-        :param redfish_object: redfish instance
+        :param: redfish_object: redfish instance.
+        :param: task_id: task id of the firmware update task.
+        :param: file_url: url to firmware bundle.
         """
 
         def has_firmware_flash_completed():
@@ -130,9 +136,11 @@ class HPEUpdateService(base.ResourceBase):
     def get_firmware_update_progress(self, task_id):
         """Get the progress of the firmware update.
 
-        :returns: firmware update state, one of the following values:
+        :param: task_id: task id of the firmware update task.
+        :returns: firmware update state, one of the following values
                   "New","Running","Completed".
         :returns: firmware update status.
+        :returns: firmware update messages.
         """
         try:
             get_task_data = self._conn.get(task_id)
