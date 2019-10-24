@@ -23,6 +23,7 @@ def _storcli(*args):
     """Function for executing storcli command.
 
     This function executes storcli command if it exists.
+
     :param args: args to be provided to storcli command
     :returns: the stdout after running the process.
     :raises: StorcliOperationError, if an OSError or a

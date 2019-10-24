@@ -102,14 +102,62 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
                     'physical_disks': [
                         '5I:0:1',
                         '5I:0:2'],
-                    'controller': 'Smart array controller'
+                    'controller': 'MSCC SmartRAID controller'
                     },
                 ]
             }
         """
         target_raid_config = node.get('target_raid_config', {}).copy()
+        # Check if SSA controller is present
         if self._is_ssa_ctrl_present():
-            return hpssa_manager.create_configuration(
+            # Check if storcli controller is present
+            if not self._is_storcli_ctrl_present():
+                # Only SSA controller is present in the system
+                return hpssa_manager.create_configuration(
+                    raid_config=target_raid_config)
+            else:
+                # Both SSA and storcli controllers are present
+                storcli_raid_config = {}
+                storcli_raid_config['logical_disks'] = []
+                hpssa_raid_config = {}
+                hpssa_raid_config['logical_disks'] = []
+
+                for ld in target_raid_config['logical_disks']:
+                    # Check if user has specified controller details
+                    if 'controller' in ld.keys():
+                        try:
+                            # If controller specified is an integer,
+                            # use storcli controller
+                            int(ld['controller'])
+                            storcli_raid_config['logical_disks'].append(ld)
+                        except ValueError:
+                            # The user specified controller is not a storcli
+                            # controller. Check if it is an SSA controller
+                            # All SSA controllers for SDFlex have ids starting
+                            # with 'MSCC SmartRAID'
+                            if 'MSCC SmartRAID' in ld['controller']:
+                                hpssa_raid_config['logical_disks'].append(ld)
+                    else:
+                        # If no controller information is specified,
+                        # default to SSA controller
+                        hpssa_raid_config['logical_disks'].append(ld)
+
+                # Create all SSA controller logical volumes
+                if hpssa_raid_config['logical_disks'] != []:
+                    hpssa_raid_config = hpssa_manager.create_configuration(
+                        raid_config=hpssa_raid_config)
+                # Create all storcli controller logical volumes
+                if storcli_raid_config['logical_disks'] != []:
+                    storcli_raid_config = storcli_manager.create_configuration(
+                        raid_config=storcli_raid_config)
+                ret = {}
+                ret['logical_disks'] = hpssa_raid_config[
+                    'logical_disks'] + storcli_raid_config['logical_disks']
+                return ret
+        # Check if storcli controller is present
+        if self._is_storcli_ctrl_present():
+            # Only storli controller is present in the system
+            return storcli_manager.create_configuration(
                 raid_config=target_raid_config)
 
     def delete_configuration(self, node, ports):
@@ -122,6 +170,8 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
         """
         if self._is_ssa_ctrl_present():
             return hpssa_manager.delete_configuration()
+        if self._is_storcli_ctrl_present():
+            return storcli_manager.delete_configuration()
 
     def erase_devices(self, node, port):
         """Erase the drives on the bare metal.
