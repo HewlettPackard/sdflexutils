@@ -105,3 +105,27 @@ class HPSSAOperationError(HPSSAException):
 
     message = ("An error was encountered while doing ssa configuration: "
                "%(reason)s.")
+
+
+class StorcliException(SDFlexUtilsException):
+
+    message = "An exception occured in storcli module"
+
+    def __init__(self, message=None, **kwargs):
+        if not message:
+            message = self.message
+
+        message = message % kwargs
+        super(StorcliException, self).__init__(message)
+
+
+class StorcliPhysicalDisksNotFoundError(StorcliException):
+
+    message = ("Not enough physical disks were found to create logical disk "
+               "of size %(size_gb)s GB and raid level %(raid_level)s")
+
+
+class StorcliOperationError(StorcliException):
+
+    message = ("An error was encountered while doing storcli configuration: "
+               "%(reason)s.")

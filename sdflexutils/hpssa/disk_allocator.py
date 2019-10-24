@@ -12,8 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from sdflexutils.common import constants
 from sdflexutils import exception
-from sdflexutils.hpssa import constants
 
 FILTER_CRITERIA = ['disk_type', 'interface_type', 'model', 'firmware']
 

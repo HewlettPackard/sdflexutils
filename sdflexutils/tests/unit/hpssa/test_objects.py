@@ -14,8 +14,8 @@
 
 import mock
 from oslo_concurrency import processutils
+from sdflexutils.common import constants
 from sdflexutils import exception
-from sdflexutils.hpssa import constants
 from sdflexutils.hpssa import objects
 from sdflexutils.tests.unit.hpssa import raid_constants
 import testtools

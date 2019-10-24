@@ -12,8 +12,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import os
+
 from ironic_python_agent import hardware
+from sdflexutils import exception
 from sdflexutils.hpssa import manager as hpssa_manager
+from sdflexutils.hpssa import objects as hpssa_objects
+from sdflexutils.storcli import storcli
 
 
 class SDFlexHardwareManager(hardware.GenericHardwareManager):
@@ -47,6 +52,38 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
     def evaluate_hardware_support(cls):
         return hardware.HardwareSupport.SERVICE_PROVIDER
 
+    def _is_ssacli_present(self):
+        if os.path.exists("/usr/sbin/ssacli"):
+            return True
+        else:
+            return False
+
+    def _is_storcli_present(self):
+        if os.path.exists("/opt/MegaRAID/storcli/"):
+            return True
+        else:
+            return False
+
+    def _is_ssa_ctrl_present(self):
+        try:
+            if self._is_ssacli_present():
+                hpssa_objects._ssacli('ctrl', 'all', 'show', 'config')
+            else:
+                return False
+        except exception.HPSSAOperationError:
+            return False
+        return True
+
+    def _is_storcli_ctrl_present(self):
+        try:
+            if self._is_storcli_present():
+                storcli._storcli('/call', 'show', 'J')
+            else:
+                return False
+        except exception.StorcliOperationError:
+            return False
+        return True
+
     def create_configuration(self, node, ports):
         """Create RAID configuration on the bare metal.
 
@@ -70,8 +107,9 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
             }
         """
         target_raid_config = node.get('target_raid_config', {}).copy()
-        return hpssa_manager.create_configuration(
-            raid_config=target_raid_config)
+        if self._is_ssa_ctrl_present():
+            return hpssa_manager.create_configuration(
+                raid_config=target_raid_config)
 
     def delete_configuration(self, node, ports):
         """Deletes RAID configuration on the bare metal.
@@ -81,7 +119,8 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
         :param ports: A list of dictionaries containing information of ports
             for the node
         """
-        return hpssa_manager.delete_configuration()
+        if self._is_ssa_ctrl_present():
+            return hpssa_manager.delete_configuration()
 
     def erase_devices(self, node, port):
         """Erase the drives on the bare metal.
@@ -98,7 +137,8 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
             status for each drive.
         """
         result = {}
-        result['Disk Erase Status'] = hpssa_manager.erase_devices()
+        if self._is_ssa_ctrl_present():
+            result['Disk Erase Status'] = hpssa_manager.erase_devices()
 
         result.update(super(SDFlexHardwareManager,
                             self).erase_devices(node, port))

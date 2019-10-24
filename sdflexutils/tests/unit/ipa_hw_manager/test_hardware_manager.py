@@ -12,11 +12,15 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import os
+
 import mock
 from oslo_utils import importutils
 from sdflexutils import exception
 from sdflexutils.hpssa import manager as hpssa_manager
+from sdflexutils.hpssa import objects as hpssa_objects
 from sdflexutils.ipa_hw_manager import hardware_manager
+from sdflexutils.storcli import storcli
 import testtools
 
 ironic_python_agent = importutils.try_import('ironic_python_agent')
@@ -41,17 +45,94 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
               'priority': 0}],
             self.hardware_manager.get_clean_steps("", ""))
 
+    @mock.patch.object(os.path, 'exists')
+    def test_is_ssacli_present(self, os_path_mock):
+        manager = self.hardware_manager
+        os_path_mock.return_value = True
+        ret = manager._is_ssacli_present()
+        self.assertEqual(True, ret)
+
+    @mock.patch.object(os.path, 'exists')
+    def test_is_ssacli_present_no(self, os_path_mock):
+        manager = self.hardware_manager
+        os_path_mock.return_value = False
+        ret = manager._is_ssacli_present()
+        self.assertEqual(False, ret)
+
+    @mock.patch.object(os.path, 'exists')
+    def test_is_storcli_present(self, os_path_mock):
+        manager = self.hardware_manager
+        os_path_mock.return_value = True
+        ret = manager._is_storcli_present()
+        self.assertEqual(True, ret)
+
+    @mock.patch.object(os.path, 'exists')
+    def test_is_storcli_present_no(self, os_path_mock):
+        manager = self.hardware_manager
+        os_path_mock.return_value = False
+        ret = manager._is_storcli_present()
+        self.assertEqual(False, ret)
+
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       '_is_storcli_present')
+    @mock.patch.object(storcli, '_storcli')
+    def test_is_storcli_ctrl_present(self, storcli_mock, exist_mock):
+        storcli_mock.return_value = "stdout"
+        exist_mock.return_value = True
+        manager = self.hardware_manager
+        ret = manager._is_storcli_ctrl_present()
+        self.assertEqual(True, ret)
+
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       '_is_storcli_present')
+    @mock.patch.object(storcli, '_storcli')
+    def test_is_storcli_ctrl_present_exception(self, storcli_mock, exist_mock):
+        storcli_mock.side_effect = exception.StorcliOperationError(
+            reason='reason')
+        exist_mock.return_value = False
+        manager = self.hardware_manager
+        ret = manager._is_storcli_ctrl_present()
+        self.assertEqual(False, ret)
+
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       '_is_ssacli_present')
+    @mock.patch.object(hpssa_objects, '_ssacli')
+    def test_is_ssa_ctrl_present(self, ssacli_mock, exist_mock):
+        ssacli_mock.return_value = ("stdout", "stderr")
+        exist_mock.return_value = True
+        manager = self.hardware_manager
+        ret = manager._is_ssa_ctrl_present()
+        self.assertEqual(True, ret)
+
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       '_is_ssacli_present')
+    @mock.patch.object(hpssa_objects, '_ssacli')
+    def test_is_ssa_ctrl_present_exception(self, ssacli_mock, exist_mock):
+        ssacli_mock.side_effect = exception.HPSSAOperationError(
+            reason='reason')
+        exist_mock.return_value = False
+        manager = self.hardware_manager
+        ret = manager._is_ssa_ctrl_present()
+        self.assertEqual(False, ret)
+
     @mock.patch.object(hpssa_manager, 'create_configuration')
-    def test_create_configuration(self, create_mock):
-        create_mock.return_value = 'current-config'
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       '_is_ssa_ctrl_present')
+    def test_create_configuration_ssa(self, ssa_ctrl_present,
+                                      hpssa_create_mock):
+        ssa_ctrl_present.return_value = True
+        hpssa_create_mock.return_value = 'current-config'
         manager = self.hardware_manager
         node = {'target_raid_config': {'foo': 'bar'}}
         ret = manager.create_configuration(node, [])
-        create_mock.assert_called_once_with(raid_config={'foo': 'bar'})
+        hpssa_create_mock.assert_called_once_with(raid_config={'foo': 'bar'})
         self.assertEqual('current-config', ret)
 
     @mock.patch.object(hpssa_manager, 'delete_configuration')
-    def test_delete_configuration(self, delete_mock):
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       '_is_ssa_ctrl_present')
+    def test_delete_configuration_ssa(self, ssa_ctrl_present, delete_mock):
+        ssa_ctrl_present.return_value = True
         delete_mock.return_value = 'current-config'
         ret = self.hardware_manager.delete_configuration("", "")
         delete_mock.assert_called_once_with()
@@ -60,9 +141,13 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
     @mock.patch.object(ironic_python_agent.hardware.GenericHardwareManager,
                        'erase_devices')
     @mock.patch.object(hpssa_manager, 'erase_devices')
-    def test_erase_devices(self, erase_mock, generic_erase_mock):
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       '_is_ssa_ctrl_present')
+    def test_erase_devices_ssa(self, ssa_ctrl_present, erase_mock,
+                               generic_erase_mock):
         node = {}
         port = {}
+        ssa_ctrl_present.return_value = True
         erase_mock.return_value = 'erase_status'
         generic_erase_mock.return_value = {'foo': 'bar'}
         ret = self.hardware_manager.erase_devices(node, port)
@@ -74,9 +159,13 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
     @mock.patch.object(ironic_python_agent.hardware.GenericHardwareManager,
                        'erase_devices')
     @mock.patch.object(hpssa_manager, 'erase_devices')
-    def test_erase_devices_not_supported(self, erase_mock, generic_erase_mock):
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       '_is_ssa_ctrl_present')
+    def test_erase_devices_ssa_not_supported(self, ssa_ctrl_present,
+                                             erase_mock, generic_erase_mock):
         node = {}
         port = {}
+        ssa_ctrl_present.return_value = True
         value = ("Sanitize erase not supported in the "
                  "available controllers")
         e = exception.HPSSAOperationError(reason=value)

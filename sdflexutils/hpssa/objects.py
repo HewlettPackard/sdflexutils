@@ -18,8 +18,8 @@ import time
 
 from oslo_concurrency import processutils
 from oslo_utils import strutils
+from sdflexutils.common import constants
 from sdflexutils import exception
-from sdflexutils.hpssa import constants
 
 
 def _get_indentation(string):

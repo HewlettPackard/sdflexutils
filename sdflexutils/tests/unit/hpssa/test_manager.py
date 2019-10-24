@@ -308,74 +308,6 @@ class ManagerTestCases(testtools.TestCase):
             'create', 'type=logicaldrive', 'drives=CN1:1:3,CN1:1:4,CN0:1:5',
             'raid=5', process_input='y')
 
-    def test__sort_shared_logical_disks(self, get_all_details_mock):
-        logical_disk_sorted_expected = [
-            {'size_gb': 500, 'disk_type': 'hdd', 'raid_level': '1'},
-            {'share_physical_disks': True, 'size_gb': 450, 'disk_type': 'hdd',
-             'number_of_physical_disks': 6, 'raid_level': '0'},
-            {'share_physical_disks': True, 'size_gb': 200, 'disk_type': 'hdd',
-             'raid_level': '1+0'},
-            {'share_physical_disks': True, 'size_gb': 200, 'disk_type': 'hdd',
-             'raid_level': '0'},
-            {'share_physical_disks': True, 'size_gb': 100, 'disk_type': 'hdd',
-             'raid_level': '0'}]
-        logical_disks = [{'size_gb': 500,
-                          'disk_type': 'hdd',
-                          'raid_level': '1'},
-                         {'share_physical_disks': True,
-                          'size_gb': 450,
-                          'disk_type': 'hdd',
-                          'number_of_physical_disks': 6,
-                          'raid_level': '0'},
-                         {'share_physical_disks': True,
-                          'size_gb': 200,
-                          'disk_type': 'hdd',
-                          'raid_level': '1+0'},
-                         {'share_physical_disks': True,
-                          'size_gb': 200,
-                          'disk_type': 'hdd',
-                          'raid_level': '0'},
-                         {'share_physical_disks': True,
-                          'size_gb': 100,
-                          'disk_type': 'hdd',
-                          'raid_level': '0'}]
-        logical_disks_sorted = manager._sort_shared_logical_disks(
-            logical_disks)
-        self.assertEqual(logical_disks_sorted, logical_disk_sorted_expected)
-
-    def test__sort_shared_logical_disks_raid10(self, get_all_details_mock):
-        logical_disk_sorted_expected = [
-            {'size_gb': 600, 'disk_type': 'hdd', 'raid_level': '1'},
-            {'share_physical_disks': False, 'size_gb': 400, 'disk_type': 'hdd',
-             'raid_level': '1+0'},
-            {'share_physical_disks': False, 'size_gb': 100, 'disk_type': 'hdd',
-             'raid_level': '5'},
-            {'share_physical_disks': True, 'size_gb': 550, 'disk_type': 'hdd',
-             'raid_level': '1'},
-            {'share_physical_disks': True, 'size_gb': 200, 'disk_type': 'hdd',
-             'raid_level': '1+0'},
-            {'share_physical_disks': True, 'size_gb': 450, 'disk_type': 'hdd',
-             'number_of_physical_disks': 5, 'raid_level': '0'},
-            {'share_physical_disks': True, 'size_gb': 300, 'disk_type': 'hdd',
-             'raid_level': '5'}]
-        logical_disks = [
-            {'size_gb': 600, 'disk_type': 'hdd', 'raid_level': '1'},
-            {'share_physical_disks': True, 'size_gb': 550, 'disk_type': 'hdd',
-             'raid_level': '1'},
-            {'share_physical_disks': True, 'size_gb': 450, 'disk_type': 'hdd',
-             'number_of_physical_disks': 5, 'raid_level': '0'},
-            {'share_physical_disks': False, 'size_gb': 400, 'disk_type': 'hdd',
-             'raid_level': '1+0'},
-            {'share_physical_disks': True, 'size_gb': 300, 'disk_type': 'hdd',
-             'raid_level': '5'},
-            {'share_physical_disks': True, 'size_gb': 200, 'disk_type': 'hdd',
-             'raid_level': '1+0'},
-            {'share_physical_disks': False, 'size_gb': 100, 'disk_type': 'hdd',
-             'raid_level': '5'}]
-        logical_disks_sorted = manager._sort_shared_logical_disks(
-            logical_disks)
-        self.assertEqual(logical_disks_sorted, logical_disk_sorted_expected)
-
     @mock.patch.object(manager, 'get_configuration')
     @mock.patch.object(objects.Controller, 'execute_cmd')
     def test_delete_configuration(self, controller_exec_cmd_mock,
@@ -563,23 +495,3 @@ class ManagerTestCases(testtools.TestCase):
         self.assertEqual(expt_ret, ret)
         self.assertTrue(controller_exec_cmd_mock.called)
         self.assertTrue(sleep_mock.called)
-
-
-class RaidConfigValidationTestCases(testtools.TestCase):
-
-    def test_validate_fails_min_disks_number(self):
-        raid_config = {'logical_disks':
-                       [{'size_gb': 100,
-                         'raid_level': '5',
-                         'number_of_physical_disks': 2}]}
-        msg = "RAID level 5 requires at least 3 disks"
-        self.assertRaisesRegex(exception.InvalidInputError, msg,
-                               manager.validate, raid_config)
-
-    def test_validate_fails_min_physical_disks(self):
-        raid_config = {'logical_disks':
-                       [{'size_gb': 100, 'raid_level': '5',
-                         'physical_disks': ['foo']}]}
-        msg = "RAID level 5 requires at least 3 disks"
-        self.assertRaisesRegex(exception.InvalidInputError, msg,
-                               manager.validate, raid_config)
