@@ -18,6 +18,7 @@ from ironic_python_agent import hardware
 from sdflexutils import exception
 from sdflexutils.hpssa import manager as hpssa_manager
 from sdflexutils.hpssa import objects as hpssa_objects
+from sdflexutils.storcli import manager as storcli_manager
 from sdflexutils.storcli import storcli
 
 
@@ -139,6 +140,8 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
         result = {}
         if self._is_ssa_ctrl_present():
             result['Disk Erase Status'] = hpssa_manager.erase_devices()
+        if self._is_storcli_ctrl_present():
+            result['Disk Erase Status'] = storcli_manager.erase_devices()
 
         result.update(super(SDFlexHardwareManager,
                             self).erase_devices(node, port))

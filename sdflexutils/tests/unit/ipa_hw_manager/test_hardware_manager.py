@@ -20,6 +20,7 @@ from sdflexutils import exception
 from sdflexutils.hpssa import manager as hpssa_manager
 from sdflexutils.hpssa import objects as hpssa_objects
 from sdflexutils.ipa_hw_manager import hardware_manager
+from sdflexutils.storcli import manager as storcli_manager
 from sdflexutils.storcli import storcli
 import testtools
 
@@ -176,3 +177,24 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
                                 node, port)
 
         self.assertIn(value, str(exc))
+
+    @mock.patch.object(ironic_python_agent.hardware.GenericHardwareManager,
+                       'erase_devices')
+    @mock.patch.object(storcli_manager, 'erase_devices')
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       '_is_ssa_ctrl_present')
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       '_is_storcli_ctrl_present')
+    def test_erase_devices_storcli(self, storcli_present, ssa_present,
+                                   erase_mock, generic_erase_mock):
+        node = {}
+        port = {}
+        storcli_present.return_value = True
+        ssa_present.return_value = False
+        erase_mock.return_value = 'Erase Completed'
+        generic_erase_mock.return_value = {'foo': 'bar'}
+        ret = self.hardware_manager.erase_devices(node, port)
+        erase_mock.assert_called_once_with()
+        generic_erase_mock.assert_called_once_with(node, port)
+        self.assertEqual({'Disk Erase Status': 'Erase Completed',
+                          'foo': 'bar'}, ret)
