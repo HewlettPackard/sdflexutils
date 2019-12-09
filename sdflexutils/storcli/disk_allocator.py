@@ -98,73 +98,110 @@ def _get_criteria_matching_disks(logical_disk, physical_drives, controller):
     return matching_physical_drives
 
 
-def _validate_raid_0(logical_disk, unassigned_pd):
+def _validate_raid_0(logical_disk, unassigned_pd, no_of_pds):
     """Checks if RAID 0 logical drive creation with requested size is possible
 
     This method finds a list of suitable unassigned physical drives which can
     be used to create a logical volume of requested size
 
     :param logical_disk: The logical disk dictionary from raid config
-    :param unassigned_pd: The list of unassigned physical drives
+    :param unassigned_pd: The sorted list of unassigned physical drives
+    :param no_of_pds: The 'number_of_physical_disks' if user has specified
+        in target raid configuration, else default value is False
     :returns: A list of suitable physical drives for logical volume creation
     """
     count = 0
     size = 0
-    pd_sort = sorted(unassigned_pd, key=lambda x: float(x[1]))
-    while size < logical_disk['size_gb'] and count < len(pd_sort):
-        size += float(pd_sort[count][1])
+    while size < logical_disk['size_gb'] and count < len(unassigned_pd):
+        size += float(unassigned_pd[count][1])
         count += 1
-    if size >= logical_disk['size_gb']:
-        return pd_sort[:count]
-    else:
-        return []
+        # Check if size condition is satisfied
+        if size >= logical_disk['size_gb']:
+            # Check if user specified number of disks
+            if not no_of_pds:
+                return unassigned_pd[:count]
+            else:
+                # Check if user specified number of disks can be allocated
+                # At least 'count' number of disks are required to satisfy
+                # the size criteria
+                if no_of_pds >= count:
+                    return unassigned_pd[:no_of_pds]
+                else:
+                    return []
+    # If unable to assign pds, return empty list
+    return []
 
 
-def _validate_raid_1(logical_disk, unassigned_pd):
+def _validate_raid_1(logical_disk, unassigned_pd, no_of_pds):
     """Checks if RAID 1 logical drive creation with requested size is possible
 
     This method finds a list of suitable unassigned physical drives which can
     be used to create a logical volume of requested size
 
     :param logical_disk: The logical disk dictionary from raid config
-    :param unassigned_pd: The list of unassigned physical drives
+    :param unassigned_pd: The sorted list of unassigned physical drives
+    :param no_of_pds: The 'number_of_physical_disks' if user has specified
+        in target raid configuration, else default value is False
     :returns: A list of suitable physical drives for logical volume creation
     """
-    pd_sort = sorted(unassigned_pd, key=lambda x: float(x[1]))
-    count = 0
-    for pd in pd_sort[:-1]:
-        if float(pd[1]) < logical_disk['size_gb']:
-            count += 1
-        else:
-            return [pd_sort[count], pd_sort[count + 1]]
+    # Check if raid 1 with 2 disks can be created
+    if not no_of_pds or no_of_pds == 2:
+        count = 0
+        for pd in unassigned_pd[:-1]:
+            if float(pd[1]) < logical_disk['size_gb']:
+                count += 1
+            else:
+                return [unassigned_pd[count], unassigned_pd[count + 1]]
 
-    if len(pd_sort) == 4 and float(pd_sort[0][1]) + float(
-            pd_sort[1][1]) >= logical_disk['size_gb']:
-        return pd_sort
-    else:
-        return []
+    # Check if raid 1 with 4 disks can be created
+    if not no_of_pds or no_of_pds == 4:
+        if len(unassigned_pd) == 4 and float(unassigned_pd[0][1]) + float(
+                unassigned_pd[1][1]) >= logical_disk['size_gb']:
+            return unassigned_pd
+
+    # If raid 1 can not be created or ld['number_of_physical_disks']
+    # is not 2 or 4, return empty list
+    return []
 
 
-def _validate_raid_5(logical_disk, unassigned_pd):
+def _validate_raid_5(logical_disk, unassigned_pd, no_of_pds):
     """Checks if RAID 5 logical drive creation with requested size is possible
 
     This method finds a list of suitable unassigned physical drives which can
     be used to create a logical volume of requested size
 
     :param logical_disk: The logical disk dictionary from raid config
-    :param unassigned_pd: The list of unassigned physical drives
+    :param unassigned_pd: The sorted list of unassigned physical drives
+    :param no_of_pds: The 'number_of_physical_disks' if user has specified
+        in target raid configuration, else default value is False
     :returns: A list of suitable physical drives for logical volume creation
     """
-    pd_sort = sorted(unassigned_pd, key=lambda x: float(x[1]))
-    disk_count = 3
-    while disk_count <= len(pd_sort):
-        for i in range(len(pd_sort) - disk_count + 1):
-            size = 0
-            for j in range(disk_count - 1):
-                size += float(pd_sort[i + j][1])
-            if size >= logical_disk['size_gb']:
-                return pd_sort[i:i + disk_count]
-        disk_count += 1
+    # RAID 5 can be with 3 or 4 disks. Out of a list of pds [a,b,c,d]
+    # (a,b,c), or (b,c,d) or (a,b,c,d) are the possible combinations
+    #
+    # case 1: a:100, b:100, c:400
+    # result: raid 5: 200 gb
+    #
+    # case 2: a:100, b:200, c:200 gb
+    # result: raid 5: 200 gb
+    #
+    # case 3: a:100, b:100, c:100, d:400
+    # result: raid 5: 300 gb
+    if no_of_pds:
+        tries = len(unassigned_pd) - no_of_pds
+        for i in range(tries + 1):
+            max_size = float(unassigned_pd[i][1]) * (no_of_pds - 1)
+            if max_size >= logical_disk['size_gb']:
+                return unassigned_pd[i:i + no_of_pds]
+    # Check if user did not specify number of disks
+    else:
+        disk_count = 3
+        while disk_count <= len(unassigned_pd):
+            for i in range(len(unassigned_pd) - disk_count + 1):
+                max_size = float(unassigned_pd[i][1]) * (disk_count - 1)
+                if max_size >= logical_disk['size_gb']:
+                    return unassigned_pd[i:i + disk_count]
+            disk_count += 1
     return []
 
 
@@ -175,13 +212,12 @@ def _validate_raid_6_10(logical_disk, unassigned_pd):
     be used to create a logical volume of requested size
 
     :param logical_disk: The logical disk dictionary from raid config
-    :param unassigned_pd: The list of unassigned physical drives
+    :param unassigned_pd: The sorted list of unassigned physical drives
     :returns: A list of suitable physical drives for logical volume creation
     """
-    pd_sort = sorted(unassigned_pd, key=lambda x: float(x[1]))
-    if float(pd_sort[0][1]) + float(pd_sort[1][1]) >= logical_disk[
-            'size_gb']:
-        return pd_sort
+    if float(unassigned_pd[0][1]) + float(
+            unassigned_pd[1][1]) >= logical_disk['size_gb']:
+        return unassigned_pd
     return []
 
 
@@ -198,32 +234,41 @@ def _validate_disks_size(logical_disk, unassigned_pd):
     :returns: A list of suitable physical drives for logical volume creation
     """
     no_of_pds = len(unassigned_pd)
-    if logical_disk['size_gb'] != 'MAX':
-        if no_of_pds >= constants.RAID_LEVEL_MIN_DISKS[
-                logical_disk['raid_level']] and logical_disk[
-                    'raid_level'] == '0':
-            return _validate_raid_0(logical_disk, unassigned_pd)
-        if no_of_pds >= constants.RAID_LEVEL_MIN_DISKS[
-                logical_disk['raid_level']] and logical_disk[
-                    'raid_level'] == '1':
-            return _validate_raid_1(logical_disk, unassigned_pd)
-        if no_of_pds >= constants.RAID_LEVEL_MIN_DISKS[
-                logical_disk['raid_level']] and logical_disk[
-                    'raid_level'] == '5':
-            return _validate_raid_5(logical_disk, unassigned_pd)
-        if no_of_pds >= constants.RAID_LEVEL_MIN_DISKS[
-            logical_disk['raid_level']] and (
-            logical_disk['raid_level'] == '6' or logical_disk[
-                'raid_level'] == '1+0'):
-            return _validate_raid_6_10(logical_disk, unassigned_pd)
+    if no_of_pds < constants.RAID_LEVEL_MIN_DISKS[
+            logical_disk['raid_level']]:
         return []
+    # Check if user specified 'number_of_physical_disks'
+    temp = logical_disk.get('number_of_physical_disks', False)
+    # User specified 'number_of_physical_disks' should be less than the
+    # number of unassigned disks
+    if temp and temp > no_of_pds:
+        return []
+
+    # Check if user specified size not as 'MAX'
+    if logical_disk['size_gb'] != 'MAX':
+        pd_sort = sorted(unassigned_pd, key=lambda x: float(x[1]))
+        if logical_disk['raid_level'] == '0':
+            return _validate_raid_0(logical_disk, pd_sort, temp)
+        if logical_disk['raid_level'] == '1':
+            return _validate_raid_1(logical_disk, pd_sort, temp)
+        if logical_disk['raid_level'] == '5':
+            return _validate_raid_5(logical_disk, pd_sort, temp)
+        if (logical_disk['raid_level'] == '6' or logical_disk[
+                'raid_level'] == '1+0'):
+            return _validate_raid_6_10(logical_disk, pd_sort)
+        return []
+    # Size is 'MAX'
     else:
         pd_sort = sorted(
             unassigned_pd, key=lambda x: float(x[1]), reverse=True)
-        if len(pd_sort) >= constants.RAID_LEVEL_MIN_DISKS[
-                logical_disk['raid_level']]:
-            return pd_sort[:no_of_pds]
-        return []
+        # Check if user specified 'number_of_physical_disks'
+        if temp:
+            return pd_sort[:temp]
+        else:
+            if logical_disk['raid_level'] == '1' and no_of_pds == 3:
+                return pd_sort[:2]
+            else:
+                return pd_sort[:no_of_pds]
 
 
 def allocate_disks(logical_disk, raid_config):

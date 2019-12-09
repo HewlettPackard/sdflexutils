@@ -108,6 +108,36 @@ def _change_controller_type(raid_config, type):
     return raid_config
 
 
+def _create_configuration_validate(raid_config):
+    """Validates user provided target RAID configuration.
+
+    This method validates the given RAID configuration.
+    :param raid_config: The dictionary containing the requested
+        RAID configuration. This data structure should be as follows:
+        raid_config = {'logical_disks': [{'raid_level': 1, 'size_gb': 100},
+                                         <info-for-logical-disk-2>
+                                        ]}
+    :raises exception.InvalidInputError, if input is invalid.
+    """
+    manager_utils.validate(raid_config)
+    for ld in raid_config['logical_disks']:
+        if ld['raid_level'] == '5+0' or ld['raid_level'] == '6+0':
+            msg = ("RAID level '{}' is currently not supported with HPE "
+                   "9361-4i RAID Controller on this platform.".format(
+                       ld['raid_level']))
+            raise exception.InvalidInputError(msg)
+        if ld.get('number_of_physical_disks', False) and ld[
+                'number_of_physical_disks'] > 4:
+            msg = ("HPE 9361-4i RAID Controller currently supports a maximum "
+                   "of only 4 physical disks on this platform.")
+            raise exception.InvalidInputError(msg)
+        if ld['raid_level'] == '1' and ld.get(
+            'number_of_physical_disks', False) and ld[
+                'number_of_physical_disks'] == 3:
+            msg = ("RAID 1 can only be created with 2 or 4 physical disks")
+            raise exception.InvalidInputError(msg)
+
+
 def create_configuration(raid_config):
     """Create a RAID configuration on this server.
 
@@ -127,13 +157,7 @@ def create_configuration(raid_config):
     """
 
     supported_controllers = disk_allocator.get_supported_controllers()
-    manager_utils.validate(raid_config)
-    for ld in raid_config['logical_disks']:
-        if ld['raid_level'] == '5+0' or ld['raid_level'] == '6+0':
-            msg = ("RAID level '{}' is currently not supported with HPE "
-                   "9361-4i RAID Controller on this platform.".format(
-                       ld['raid_level']))
-            raise exception.InvalidInputError(msg)
+    _create_configuration_validate(raid_config)
     # converting controller names to integers
     if 'logical_disks' in raid_config.keys():
         raid_config = _change_controller_type(raid_config, int)

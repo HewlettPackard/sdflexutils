@@ -138,101 +138,180 @@ class DiskAllocatorTestCase(testtools.TestCase):
                           disk_allocator._get_criteria_matching_disks,
                           logical_disk, physical_drives, controller)
 
-    def test__validate_raid_0_not_enough_pd(self):
+    def test__validate_raid_0_no_of_pd_more_than_reqd(self):
         logical_disk = {'size_gb': 200,
-                        'raid_level': '0'}
-        unassigned_pd = [['252:0', '50'], ['252:1', '70']]
-        self.assertEqual([], disk_allocator._validate_raid_0(logical_disk,
-                                                             unassigned_pd))
+                        'raid_level': '0',
+                        'number_of_physical_disks': 4}
+        unassigned_pd = [['252:0', '110.281'], ['252:1', '110.281'],
+                         ['252:2', '110.281'], ['252:3', '110.281']]
+        self.assertEqual(unassigned_pd, disk_allocator._validate_raid_0(
+            logical_disk, unassigned_pd, 4))
 
     def test__validate_raid_0_success(self):
         logical_disk = {'size_gb': 200,
                         'raid_level': '0'}
         unassigned_pd = [['252:0', '110.281'], ['252:1', '110.281']]
         self.assertEqual(unassigned_pd, disk_allocator._validate_raid_0(
-            logical_disk, unassigned_pd))
+            logical_disk, unassigned_pd, False))
 
-    def test__validate_raid_1_not_enough_pd(self):
+    def test__validate_raid_0_not_enough_pd(self):
+        logical_disk = {'size_gb': 300,
+                        'raid_level': '0'}
+        unassigned_pd = [['252:0', '110.281'], ['252:1', '110.281']]
+        self.assertEqual([], disk_allocator._validate_raid_0(
+            logical_disk, unassigned_pd, False))
+
+    def test__validate_raid_0_not_enough_pd_no_of_pd(self):
+        logical_disk = {'size_gb': 300,
+                        'raid_level': '0',
+                        'number_of_physical_disks': 2}
+        unassigned_pd = [['252:0', '110.281'], ['252:1', '110.281'],
+                         ['252:2', '110.281'], ['252:3', '110.281']]
+        self.assertEqual([], disk_allocator._validate_raid_0(
+            logical_disk, unassigned_pd, 2))
+
+    def test__validate_raid_1_not_enough_pd_2(self):
         logical_disk = {'size_gb': 200,
                         'raid_level': '1'}
         unassigned_pd = [['252:0', '50'], ['252:1', '90'], ['252:2', '100']]
-        self.assertEqual([], disk_allocator._validate_raid_1(logical_disk,
-                                                             unassigned_pd))
+        self.assertEqual([], disk_allocator._validate_raid_1(
+            logical_disk, unassigned_pd, False))
+
+    def test__validate_raid_1_not_enough_pd_4(self):
+        logical_disk = {'size_gb': 200,
+                        'raid_level': '1'}
+        unassigned_pd = [['252:0', '50'], ['252:1', '90'], ['252:2', '100'],
+                         ['252:3', '100']]
+        self.assertEqual([], disk_allocator._validate_raid_1(
+            logical_disk, unassigned_pd, False))
 
     def test__validate_raid_1_success_4_disks(self):
         logical_disk = {'size_gb': 200,
                         'raid_level': '1'}
         unassigned_pd = [['252:0', '110.281'], ['252:1', '110.281'],
-                         ['252:2', '465.25'],  ['252:3', '110.281']]
-        self.assertEqual([['252:0', '110.281'], ['252:1', '110.281'],
-                          ['252:3', '110.281'], ['252:2', '465.25']],
-                         disk_allocator._validate_raid_1(logical_disk,
-                                                         unassigned_pd))
+                         ['252:3', '110.281'], ['252:2', '465.25']]
+        self.assertEqual(unassigned_pd, disk_allocator._validate_raid_1(
+            logical_disk, unassigned_pd, False))
 
     def test__validate_raid_1_success_2_disks(self):
         logical_disk = {'size_gb': 100,
                         'raid_level': '1'}
         unassigned_pd = [['252:0', '110.281'], ['252:1', '110.281'],
-                         ['252:2', '465.25'],  ['252:3', '110.281']]
-        self.assertEqual([['252:0', '110.281'], ['252:1', '110.281']],
-                         disk_allocator._validate_raid_1(logical_disk,
-                                                         unassigned_pd))
+                         ['252:3', '110.281'], ['252:2', '465.25']]
+        self.assertEqual(unassigned_pd[:2], disk_allocator._validate_raid_1(
+            logical_disk, unassigned_pd, False))
+
+    def test__validate_raid_1_success_4_disks_no_of_pd(self):
+        logical_disk = {'size_gb': 200,
+                        'raid_level': '1',
+                        'number_of_physical_disks': 4}
+        unassigned_pd = [['252:0', '110.281'], ['252:1', '110.281'],
+                         ['252:3', '110.281'], ['252:2', '465.25']]
+        self.assertEqual(unassigned_pd, disk_allocator._validate_raid_1(
+            logical_disk, unassigned_pd, 4))
+
+    def test__validate_raid_1_success_2_disks_no_pd(self):
+        logical_disk = {'size_gb': 100,
+                        'raid_level': '1',
+                        'number_of_physical_disks': 2}
+        unassigned_pd = [['252:0', '110.281'], ['252:1', '110.281'],
+                         ['252:3', '110.281'], ['252:2', '465.25']]
+        self.assertEqual(unassigned_pd[:2], disk_allocator._validate_raid_1(
+            logical_disk, unassigned_pd, 2))
 
     def test__validate_raid_5_not_enough_pd(self):
         logical_disk = {
             "size_gb": 350,
-            "raid_level": "5",
+            "raid_level": "5"
         }
         unassigned_pd = [['252:0', '111.281'], ['252:1', '111.281'],
-                         ['252:2', '465.25'], ['252:3', '111.281']]
-        self.assertEqual([], disk_allocator._validate_raid_5(logical_disk,
-                                                             unassigned_pd))
+                         ['252:3', '111.281'], ['252:2', '465.25']]
+        self.assertEqual([], disk_allocator._validate_raid_5(
+            logical_disk, unassigned_pd, False))
+
+    def test__validate_raid_5_not_enough_pd_no_of_pd_3(self):
+        logical_disk = {
+            "size_gb": 300,
+            "raid_level": "5",
+            'number_of_physical_disks': 3
+        }
+        unassigned_pd = [['252:0', '111.281'], ['252:1', '111.281'],
+                         ['252:3', '111.281'], ['252:2', '465.25']]
+        self.assertEqual([], disk_allocator._validate_raid_5(
+            logical_disk, unassigned_pd, 3))
+
+    def test__validate_raid_5_not_enough_pd_no_of_pd_4(self):
+        logical_disk = {
+            "size_gb": 350,
+            "raid_level": "5",
+            'number_of_physical_disks': 4
+        }
+        unassigned_pd = [['252:0', '111.281'], ['252:1', '111.281'],
+                         ['252:3', '111.281'], ['252:2', '465.25']]
+        self.assertEqual([], disk_allocator._validate_raid_5(
+            logical_disk, unassigned_pd, 4))
 
     def test__validate_raid_5_success_3_disks(self):
         logical_disk = {
             "size_gb": 100,
-            "raid_level": "5",
+            "raid_level": "5"
         }
         unassigned_pd = [['252:0', '111.281'], ['252:1', '111.281'],
-                         ['252:2', '465.25'], ['252:3', '111.281']]
-        self.assertEqual([['252:0', '111.281'], ['252:1', '111.281'],
-                          ['252:3', '111.281']],
-                         disk_allocator._validate_raid_5(logical_disk,
-                                                         unassigned_pd))
+                         ['252:3', '111.281'], ['252:2', '465.25']]
+        self.assertEqual(unassigned_pd[:3], disk_allocator._validate_raid_5(
+            logical_disk, unassigned_pd, False))
 
     def test__validate_raid_5_success_4_disks(self):
         logical_disk = {
             "size_gb": 300,
-            "raid_level": "5",
+            "raid_level": "5"
         }
         unassigned_pd = [['252:0', '111.281'], ['252:1', '111.281'],
-                         ['252:2', '465.25'], ['252:3', '111.281']]
-        self.assertEqual([['252:0', '111.281'], ['252:1', '111.281'],
-                          ['252:3', '111.281'], ['252:2', '465.25']],
-                         disk_allocator._validate_raid_5(logical_disk,
-                                                         unassigned_pd))
+                         ['252:3', '111.281'], ['252:2', '465.25']]
+        self.assertEqual(unassigned_pd, disk_allocator._validate_raid_5(
+            logical_disk, unassigned_pd, False))
+
+    def test__validate_raid_5_success_3_disks_no_of_pd(self):
+        logical_disk = {
+            "size_gb": 100,
+            "raid_level": "5",
+            'number_of_physical_disks': 3
+        }
+        unassigned_pd = [['252:0', '111.281'], ['252:1', '111.281'],
+                         ['252:3', '111.281'], ['252:2', '465.25']]
+        self.assertEqual(unassigned_pd[:3], disk_allocator._validate_raid_5(
+            logical_disk, unassigned_pd, 3))
+
+    def test__validate_raid_5_success_4_disks_no_pd(self):
+        logical_disk = {
+            "size_gb": 300,
+            "raid_level": "5",
+            'number_of_physical_disks': 4
+        }
+        unassigned_pd = [['252:0', '111.281'], ['252:1', '111.281'],
+                         ['252:3', '111.281'], ['252:2', '465.25']]
+        self.assertEqual(unassigned_pd, disk_allocator._validate_raid_5(
+            logical_disk, unassigned_pd, 4))
 
     def test__validate_raid_6_10_not_enough_pd(self):
         logical_disk = {
             "size_gb": 250,
-            "raid_level": "6",
+            "raid_level": "6"
         }
         unassigned_pd = [['252:0', '111.281'], ['252:1', '111.281'],
-                         ['252:2', '465.25'], ['252:3', '111.281']]
-        self.assertEqual([], disk_allocator._validate_raid_6_10(logical_disk,
-                                                                unassigned_pd))
+                         ['252:3', '111.281'], ['252:2', '465.25']]
+        self.assertEqual([], disk_allocator._validate_raid_6_10(
+            logical_disk, unassigned_pd))
 
     def test__validate_raid_6_10_success(self):
         logical_disk = {
             "size_gb": 100,
-            "raid_level": "6",
+            "raid_level": "6"
         }
         unassigned_pd = [['252:0', '111.281'], ['252:1', '111.281'],
-                         ['252:2', '465.25'], ['252:3', '111.281']]
-        self.assertEqual([['252:0', '111.281'], ['252:1', '111.281'],
-                          ['252:3', '111.281'], ['252:2', '465.25']],
-                         disk_allocator._validate_raid_6_10(logical_disk,
-                                                            unassigned_pd))
+                         ['252:3', '111.281'], ['252:2', '465.25']]
+        self.assertEqual(unassigned_pd, disk_allocator._validate_raid_6_10(
+            logical_disk, unassigned_pd))
 
     def test__validate_disks_size_max_success(self):
         unassigned_pd = [['252:0', '111.281'], ['252:1', '111.281'],
@@ -240,7 +319,7 @@ class DiskAllocatorTestCase(testtools.TestCase):
 
         logical_disk_0_max = {
             "size_gb": 'MAX',
-            "raid_level": "0",
+            "raid_level": "0"
         }
         self.assertEqual(
             disk_allocator._validate_disks_size(logical_disk_0_max,
@@ -250,7 +329,7 @@ class DiskAllocatorTestCase(testtools.TestCase):
 
         logical_disk_1_max = {
             "size_gb": 'MAX',
-            "raid_level": "1",
+            "raid_level": "1"
         }
         self.assertEqual(
             disk_allocator._validate_disks_size(logical_disk_1_max,
@@ -260,7 +339,7 @@ class DiskAllocatorTestCase(testtools.TestCase):
 
         logical_disk_5_max = {
             "size_gb": 'MAX',
-            "raid_level": "5",
+            "raid_level": "5"
         }
         self.assertEqual(
             disk_allocator._validate_disks_size(logical_disk_5_max,
@@ -270,11 +349,72 @@ class DiskAllocatorTestCase(testtools.TestCase):
 
         logical_disk_10_max = {
             "size_gb": 'MAX',
-            "raid_level": "1+0",
+            "raid_level": "1+0"
         }
         self.assertEqual(
             disk_allocator._validate_disks_size(logical_disk_10_max,
                                                 unassigned_pd),
+            [['252:2', '465.25'], ['252:0', '111.281'], ['252:1', '111.281'],
+             ['252:3', '111.281']])
+
+    def test__validate_disks_size_max_success_no_of_pds(self):
+        unassigned_pd = [['252:0', '111.281'], ['252:1', '111.281'],
+                         ['252:2', '465.25'], ['252:3', '111.281']]
+
+        logical_disk_0_max = {
+            "size_gb": 'MAX',
+            "raid_level": "0",
+            'number_of_physical_disks': 3
+        }
+        self.assertEqual(disk_allocator._validate_disks_size(
+            logical_disk_0_max, unassigned_pd),
+            [['252:2', '465.25'], ['252:0', '111.281'], ['252:1', '111.281']])
+
+        logical_disk_1_max_2 = {
+            "size_gb": 'MAX',
+            "raid_level": "1",
+            'number_of_physical_disks': 2
+        }
+        self.assertEqual(disk_allocator._validate_disks_size(
+            logical_disk_1_max_2, unassigned_pd),
+            [['252:2', '465.25'], ['252:0', '111.281']])
+
+        logical_disk_1_max_4 = {
+            "size_gb": 'MAX',
+            "raid_level": "1",
+            'number_of_physical_disks': 4
+        }
+        self.assertEqual(disk_allocator._validate_disks_size(
+            logical_disk_1_max_4, unassigned_pd),
+            [['252:2', '465.25'], ['252:0', '111.281'], ['252:1', '111.281'],
+             ['252:3', '111.281']])
+
+        logical_disk_5_max_3 = {
+            "size_gb": 'MAX',
+            "raid_level": "5",
+            'number_of_physical_disks': 3
+        }
+        self.assertEqual(disk_allocator._validate_disks_size(
+            logical_disk_5_max_3, unassigned_pd),
+            [['252:2', '465.25'], ['252:0', '111.281'], ['252:1', '111.281']])
+
+        logical_disk_5_max_4 = {
+            "size_gb": 'MAX',
+            "raid_level": "5",
+            'number_of_physical_disks': 4
+        }
+        self.assertEqual(disk_allocator._validate_disks_size(
+            logical_disk_5_max_4, unassigned_pd),
+            [['252:2', '465.25'], ['252:0', '111.281'], ['252:1', '111.281'],
+             ['252:3', '111.281']])
+
+        logical_disk_10_max = {
+            "size_gb": 'MAX',
+            "raid_level": "1+0",
+            'number_of_physical_disks': 4
+        }
+        self.assertEqual(disk_allocator._validate_disks_size(
+            logical_disk_10_max, unassigned_pd),
             [['252:2', '465.25'], ['252:0', '111.281'], ['252:1', '111.281'],
              ['252:3', '111.281']])
 
@@ -284,31 +424,41 @@ class DiskAllocatorTestCase(testtools.TestCase):
 
         logical_disk_1_max = {
             "size_gb": 'MAX',
-            "raid_level": "1",
+            "raid_level": "1"
         }
         self.assertEqual([], disk_allocator._validate_disks_size(
             logical_disk_1_max, unassigned_pd[:1]))
 
         logical_disk_10_max = {
             "size_gb": 'MAX',
-            "raid_level": "1+0",
+            "raid_level": "1+0"
         }
         self.assertEqual([], disk_allocator._validate_disks_size(
             logical_disk_10_max, unassigned_pd[:-1]))
 
         logical_disk_6_max = {
             "size_gb": 'MAX',
-            "raid_level": "6",
+            "raid_level": "6"
         }
         self.assertEqual([], disk_allocator._validate_disks_size(
             logical_disk_6_max, unassigned_pd[:-1]))
 
         logical_disk_5_max = {
             "size_gb": 'MAX',
-            "raid_level": "5",
+            "raid_level": "5"
         }
         self.assertEqual([], disk_allocator._validate_disks_size(
             logical_disk_5_max, unassigned_pd[0:-2]))
+
+    def test__validate_disks_size_no_of_pds_more_than_unassigned(self):
+        unassigned_pd = [['252:0', '111.281'], ['252:1', '111.281']]
+        logical_disk_1_max = {
+            "size_gb": 'MAX',
+            "raid_level": "1",
+            'number_of_physical_disks': 4
+        }
+        self.assertEqual([], disk_allocator._validate_disks_size(
+            logical_disk_1_max, unassigned_pd))
 
     @mock.patch.object(disk_allocator, '_validate_raid_0')
     def test__validate_disks_size_raid_0_success(self, raid_mock):
@@ -316,7 +466,7 @@ class DiskAllocatorTestCase(testtools.TestCase):
                          ['252:2', '465.25'], ['252:3', '111.281']]
         logical_disk = {
             "size_gb": 500,
-            "raid_level": "0",
+            "raid_level": "0"
         }
         mock_ret = [['252:0', '111.281'], ['252:1', '111.281'],
                     ['252:3', '111.281'], ['252:2', '465.25']]
@@ -327,7 +477,7 @@ class DiskAllocatorTestCase(testtools.TestCase):
     def test__validate_disks_size_raid_0_failure_less_pd(self):
         logical_disk = {
             "size_gb": 500,
-            "raid_level": "0",
+            "raid_level": "0"
         }
         self.assertEqual([], disk_allocator._validate_disks_size(
             logical_disk, []))
@@ -338,7 +488,7 @@ class DiskAllocatorTestCase(testtools.TestCase):
                          ['252:3', '111.281'], ['252:2', '465.25']]
         logical_disk = {
             "size_gb": 100,
-            "raid_level": "1",
+            "raid_level": "1"
         }
         mock_ret = [['252:0', '111.281'], ['252:1', '111.281']]
         raid_mock.return_value = mock_ret
@@ -350,7 +500,7 @@ class DiskAllocatorTestCase(testtools.TestCase):
         unassigned_pd = [['252:0', '111.281']]
         logical_disk = {
             "size_gb": 100,
-            "raid_level": "1",
+            "raid_level": "1"
         }
         mock_ret = []
         raid_mock.return_value = mock_ret
@@ -363,7 +513,7 @@ class DiskAllocatorTestCase(testtools.TestCase):
                          ['252:3', '111.281'], ['252:2', '465.25']]
         logical_disk = {
             "size_gb": 100,
-            "raid_level": "5",
+            "raid_level": "5"
         }
         mock_ret = [['252:0', '111.281'], ['252:1', '111.281'],
                     ['252:2', '465.25']]
@@ -376,7 +526,7 @@ class DiskAllocatorTestCase(testtools.TestCase):
         unassigned_pd = [['252:0', '111.281']]
         logical_disk = {
             "size_gb": 100,
-            "raid_level": "5",
+            "raid_level": "5"
         }
         mock_ret = []
         raid_mock.return_value = mock_ret
@@ -389,7 +539,7 @@ class DiskAllocatorTestCase(testtools.TestCase):
                          ['252:3', '111.281'], ['252:2', '465.25']]
         logical_disk = {
             "size_gb": 100,
-            "raid_level": "6",
+            "raid_level": "6"
         }
         mock_ret = [['252:0', '111.281'], ['252:1', '111.281'],
                     ['252:2', '465.25']]
@@ -402,7 +552,7 @@ class DiskAllocatorTestCase(testtools.TestCase):
         unassigned_pd = [['252:0', '111.281']]
         logical_disk = {
             "size_gb": 100,
-            "raid_level": "1+0",
+            "raid_level": "1+0"
         }
         mock_ret = []
         raid_mock.return_value = mock_ret
@@ -447,7 +597,7 @@ class DiskAllocatorTestCase(testtools.TestCase):
         raid_config = {'logical_disks': [logical_disk]}
         disk_allocator.allocate_disks(logical_disk, raid_config)
         self.assertEqual(0, logical_disk['controller'])
-        self.assertEqual(sorted(['252:0', '252:1', '252:2']),
+        self.assertEqual(sorted(['252:0', '252:1']),
                          sorted(logical_disk['physical_disks']))
 
     @mock.patch.object(storcli, '_storcli')

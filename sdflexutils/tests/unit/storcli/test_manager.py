@@ -137,6 +137,78 @@ class ManagerTestCases(testtools.TestCase):
                           manager._validate_pds_in_controller,
                           logical_disk)
 
+    def test__create_configuration_validate_invalid_json(self):
+        raid_config = {
+            'logical_disks': [{'controller': '0'}]
+        }
+        self.assertRaises(exception.InvalidInputError,
+                          manager._create_configuration_validate,
+                          raid_config)
+
+    def test__create_configuration_validate_invalid_logical_disks_50(self):
+        raid_info = {
+            'logical_disks': [
+                {'size_gb': 50,
+                 'raid_level': '5+0',
+                 'controller': '0',
+                 'physical_disks': [
+                     "252:0", "252:1", "252:2", "252:3",
+                     "252:4", "252:5", "252:6", "252:7"]}]}
+        msg = ("RAID level '5+0' is currently not supported with HPE 9361-4i"
+               " RAID Controller on this platform.")
+        ex = self.assertRaises(exception.InvalidInputError,
+                               manager._create_configuration_validate,
+                               raid_info)
+        self.assertEqual(msg, str(ex))
+
+    def test__create_configurationvalidate_invalid_logical_disks_60(self):
+        raid_info = {
+            'logical_disks': [
+                {'size_gb': 50,
+                 'raid_level': '6+0',
+                 'controller': '0',
+                 'physical_disks': [
+                     "252:0", "252:1", "252:2", "252:3",
+                     "252:4", "252:5", "252:6", "252:7"]}]}
+        msg = ("RAID level '6+0' is currently not supported with HPE 9361-4i"
+               " RAID Controller on this platform.")
+        ex = self.assertRaises(exception.InvalidInputError,
+                               manager._create_configuration_validate,
+                               raid_info)
+        self.assertEqual(msg, str(ex))
+
+    def test_create_configuration_invalid_logical_disks_no_of_pds(self):
+        raid_info = {
+            'logical_disks': [
+                {'size_gb': 50,
+                 'raid_level': '0',
+                 'number_of_physical_disks': 8,
+                 'controller': '0',
+                 'physical_disks': [
+                     "252:0", "252:1", "252:2", "252:3",
+                     "252:4", "252:5", "252:6", "252:7"]}]}
+        msg = ("HPE 9361-4i RAID Controller currently supports a maximum "
+               "of only 4 physical disks on this platform.")
+        ex = self.assertRaises(exception.InvalidInputError,
+                               manager._create_configuration_validate,
+                               raid_info)
+        self.assertEqual(msg, str(ex))
+
+    def test_create_configuration_validate_invalid_no_of_pds_raid_1(self):
+        raid_info = {
+            'logical_disks': [
+                {'size_gb': 50,
+                 'raid_level': '1',
+                 'number_of_physical_disks': 3,
+                 'controller': '0',
+                 'physical_disks': [
+                     "252:0", "252:1", "252:2"]}]}
+        msg = ("RAID 1 can only be created with 2 or 4 physical disks")
+        ex = self.assertRaises(exception.InvalidInputError,
+                               manager._create_configuration_validate,
+                               raid_info)
+        self.assertEqual(msg, str(ex))
+
     def test__change_controller_type_str(self):
         raid_config = {
             'logical_disks': [{'controller': '0'}, {'controller': '1'}]}
@@ -261,45 +333,6 @@ class ManagerTestCases(testtools.TestCase):
                       'physical_disks': ["252:10", "252:12"]}]}
         msg = ("Invalid Input: Unable to find controller named '10'. "
                "The available controllers are '0'.")
-        ex = self.assertRaises(exception.InvalidInputError,
-                               manager.create_configuration,
-                               raid_info)
-        self.assertEqual(msg, str(ex))
-
-    @mock.patch.object(disk_allocator, 'get_supported_controllers')
-    def test_create_configuration_invalid_logical_disks_50(
-            self, supported_ctrl_mock):
-        supported_ctrl_mock.side_effect = [[0], [0]]
-
-        raid_info = {
-            'logical_disks': [
-                {'size_gb': 50,
-                 'raid_level': '5+0',
-                 'controller': '0',
-                 'physical_disks': [
-                     "252:0", "252:1", "252:2", "252:3",
-                     "252:4", "252:5", "252:6", "252:7"]}]}
-        msg = ("RAID level '5+0' is currently not supported with HPE 9361-4i"
-               " RAID Controller on this platform.")
-        ex = self.assertRaises(exception.InvalidInputError,
-                               manager.create_configuration,
-                               raid_info)
-        self.assertEqual(msg, str(ex))
-
-    @mock.patch.object(disk_allocator, 'get_supported_controllers')
-    def test_create_configuration_invalid_logical_disks_60(
-            self, supported_ctrl_mock):
-        supported_ctrl_mock.side_effect = [[0], [0]]
-        raid_info = {
-            'logical_disks': [
-                {'size_gb': 50,
-                 'raid_level': '6+0',
-                 'controller': '0',
-                 'physical_disks': [
-                     "252:0", "252:1", "252:2", "252:3",
-                     "252:4", "252:5", "252:6", "252:7"]}]}
-        msg = ("RAID level '6+0' is currently not supported with HPE 9361-4i"
-               " RAID Controller on this platform.")
         ex = self.assertRaises(exception.InvalidInputError,
                                manager.create_configuration,
                                raid_info)
