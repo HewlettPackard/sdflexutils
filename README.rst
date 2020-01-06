@@ -2,20 +2,22 @@ sdflexutils
 =============
 
 **sdflexutils** is a set of utility libraries for interfacing and managing
-various components (like HPSSA) for HP Superdome Flex Servers.  This library
-is used by sdflex-ironic-drivers which is a special driver for Openstack Ironic
-for managing Superdome Flex Servers in Cloud environment.
+HPE Superdome Flex Servers.  This library is used by sdflex-ironic-drivers
+which is a special driver for Openstack Ironic for managing Superdome Flex
+Servers in Cloud environment.
 
 Installation
 ------------
 
-Install the module by
+Install the module by::
 
-1) git clone https://github.hpe.com/sdflex/sdflexutils.git
-2) cd sdflexutils
-3) pip install .
+    pip install sdflexutils
 
+or::
 
+    git clone https://github.com/HewlettPackard/sdflexutils
+    cd sdflexutils
+    pip install .
 
 Usage
 -----
