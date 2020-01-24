@@ -33,3 +33,8 @@ For interfacing with the SDFlex, use *SDFlexClient* object::
   >>> sdflex_client.get_host_power_status()
   'OFF'
   >>>
+
+Reporting Bugs
+--------------
+To report bugs, use `github issues
+<https://github.com/HewlettPackard/sdflexutils/issues>`_.
