@@ -1,6 +1,11 @@
 CHANGES
 =======
 
+* Changes required for pypi packaging
+* Adding raid configuration support using storcli
+* Adding disk erase support using storcli
+* Adding storcli utility support
+* Enabling complex firmware update feature in sdflexutils
 * Enablement of Bios Setting capabilities in SDFlexutils
 * Adding Python3 support for Tox
 * Secure boot enablement code in sdflexutils

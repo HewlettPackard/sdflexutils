@@ -34,7 +34,7 @@ For interfacing with the Superdome Flex Server, use *SDFlexClient* object::
 Documentation
 -------------
 
-For more documentation on **sdflexutils** library, `see sdflexutils
+For more documentation on **sdflexutils** library, see `sdflexutils
 wiki page <https://github.com/HewlettPackard/sdflexutils/wiki>`_.
 
 Reporting Bugs
