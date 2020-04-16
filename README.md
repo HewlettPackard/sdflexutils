@@ -9,7 +9,7 @@ type is provided by [sdflex-ironic-driver](https://pypi.org/project/sdflex-ironi
 Installation
 ------------
 
-Install the module from [PyPI](<https://pypi.org/project/sdflexutils):
+Install the module from [PyPI](https://pypi.org/project/sdflexutils):
 
     pip install sdflexutils
 
