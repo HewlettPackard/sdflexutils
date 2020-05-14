@@ -74,7 +74,7 @@ class HPEUpdateService(base.ResourceBase):
         target_uri = self._get_firmware_update_element().target_uri
         try:
             post_resp = self._conn.post(target_uri, data=action_data)
-            post_resp = json.loads(post_resp.content)
+            post_resp = json.loads(post_resp.content.decode('utf-8'))
             task_id = post_resp.get('@odata.id')
             self.wait_for_redfish_firmware_update_to_complete(
                 redfish_inst, task_id, file_url)
@@ -144,7 +144,7 @@ class HPEUpdateService(base.ResourceBase):
         """
         try:
             get_task_data = self._conn.get(task_id)
-            get_task_data = json.loads(get_task_data.content)
+            get_task_data = json.loads(get_task_data.content.decode('utf-8'))
             task_state = get_task_data.get('TaskState')
             task_status = get_task_data.get('TaskStatus')
             msg = ''

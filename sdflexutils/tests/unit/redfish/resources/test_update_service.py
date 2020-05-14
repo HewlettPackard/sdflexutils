@@ -76,7 +76,7 @@ class HPEUpdateServiceTestCase(testtools.TestCase):
                      '"@odata.id": "/redfish/v1/TaskService/TaskId/1234",'
                      '"TaskState": "Completed", "TaskStatus": "OK",'
                      '"StartTime": "2019-08-23T10:48:k",'
-                     '"@odata.type": "#Task.v1_1_0.Task"}')
+                     '"@odata.type": "#Task.v1_1_0.Task"}').encode('ascii')
         self.conn.post.return_value = m
         self.us_inst.flash_firmware(self.sdflex_client, file_url)
         # | THEN |
