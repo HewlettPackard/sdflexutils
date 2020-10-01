@@ -1,4 +1,4 @@
-# Copyright 2019 Hewlett Packard Enterprise Development LP
+# Copyright 2019-2020 Hewlett Packard Enterprise Development LP
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -61,6 +61,7 @@ class RedfishOperationsTestCase(testtools.TestCase):
         self.sushy.get_system().power_state = sushy.SYSTEM_POWER_STATE_ON
         power_state = self.sdflex_client.get_host_power_status()
         self.assertEqual('ON', power_state)
+
 
     def test_reset_server(self):
         self.sdflex_client.reset_server()
@@ -312,3 +313,85 @@ class RedfishOperationsTestCase(testtools.TestCase):
             exception.SDFlexError,
             'The Redfish controller failed to update firmware',
             self.sdflex_client.update_firmware, 'fw_file_url')
+
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_get_vmedia_status(self, get_system_mock):
+        with open('sdflexutils/tests/unit/redfish/'
+                  'json_samples/vmedia_config.json', 'r') as f:
+            json_data = json.loads(f.read()).get("VirtualMediaConfig")
+        get_system_mock.return_value.vmedia.service_enabled = json_data
+        actual_vmedia_status_data = self.sdflex_client.get_vmedia_status()
+        expected = {"ServiceEnabled": True}
+        self.assertEqual(expected, actual_vmedia_status_data)
+
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_get_vmedia_status_fail(self, get_system_mock):
+        get_system_mock.side_effect = sushy.exceptions.SushyError
+        self.assertRaises(exception.SDFlexError,
+                          self.sdflex_client.get_vmedia_status)
+
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_enable_vmedia(self, get_system_mock):
+        self.sdflex_client.enable_vmedia(True)
+        expected_data = {"ServiceEnabled": True}
+        with open('sdflexutils/tests/unit/redfish/'
+                  'json_samples/vmedia_config.json', 'r') as f:
+            json_data = json.loads(f.read()).get("VirtualMediaConfig")
+        get_system_mock.return_value.vmedia.service_enabled = json_data
+        vmedia_status = self.sdflex_client.get_vmedia_status()
+        self.assertEqual(expected_data, vmedia_status)
+
+    def test_set_vmedia_status_invalid_value(self):
+        self.assertRaises(exception.InvalidInputError,
+                          self.sdflex_client.enable_vmedia,
+                          'some-non-boolean')
+
+    def test_validate_vmedia_device(self):
+        device = sys_cons.VIRTUALMEDIA_DEVICE0
+        self.sdflex_client.validate_vmedia_device(device)
+
+    def test_validate_vmedia_invalid_device(self):
+        self.assertRaises(exception.SDFlexError,
+                          self.sdflex_client.validate_vmedia_device, 'cd2')
+
+    @mock.patch.object(redfish.RedfishOperations, 'eject_vmedia')
+    def test_eject_vmedia(self, eject_mock):
+        eject_mock.return_value = None
+        self.sdflex_client.eject_vmedia()
+        self.sdflex_client.eject_vmedia.assert_called_once_with()
+
+    @mock.patch.object(redfish.RedfishOperations, 'eject_vmedia')
+    def test_eject_vmedia_device(self, eject_mock):
+        eject_mock.return_value = None
+        self.sdflex_client.eject_vmedia('cd0')
+        self.sdflex_client.eject_vmedia.assert_called_once_with('cd0')
+
+    def test_eject_vmedia_invalid_device(self):
+        self.assertRaises(exception.SDFlexError,
+                          self.sdflex_client.eject_vmedia, 'cd2')
+
+    @mock.patch.object(redfish.RedfishOperations, 'insert_vmedia')
+    def test_insert_vmedia_nfs(self, insert_mock):
+        insert_mock.return_value = None
+        url = "http://1.2.3.4:5678/xyz.iso"
+        data = {'remote_image_share_type': 'nfs'}
+        self.sdflex_client.insert_vmedia(url, 'cd0', data)
+        insert_mock.assert_called_once_with(url, 'cd0', data)
+
+    @mock.patch.object(redfish.RedfishOperations, 'insert_vmedia')
+    def test_insert_vmedia_cifs(self, insert_mock):
+        insert_mock.return_value = None
+        url = "http://1.2.3.4:5678/xyz.iso"
+        data = {'remote_image_user_name': 'guest',
+                'remote_image_user_password': 'guest',
+                'remote_image_share_type': 'cifs'}
+        self.sdflex_client.insert_vmedia(url, 'cd0', data)
+        insert_mock.assert_called_once_with(url, 'cd0', data)
+
+    def test_insert_vmedia_invalid_device(self):
+        url = "http://1.2.3.4:5678/xyz.iso"
+        self.assertRaises(exception.SDFlexError,
+                          self.sdflex_client.insert_vmedia, url, 'device1232',
+                          {'remote_image_user_name': 'guest',
+                           'remote_image_user_password': 'guest',
+                           'remote_image_share_type': 'cifs'})

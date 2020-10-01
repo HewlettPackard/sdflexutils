@@ -1,4 +1,4 @@
-# Copyright 2019 Hewlett Packard Enterprise Development LP
+# Copyright 2019-2020 Hewlett Packard Enterprise Development LP
 #
 # All Rights Reserved.
 #
@@ -18,3 +18,8 @@
 
 SECUREBOOT_CURRENT_BOOT_ENABLED = 'enabled'
 SECUREBOOT_CURRENT_BOOT_DISABLED = 'disabled'
+
+# Virtual Media Device constants
+
+VIRTUALMEDIA_DEVICE0 = 'cd0'
+VIRTUALMEDIA_DEVICE1 = 'cd1'
