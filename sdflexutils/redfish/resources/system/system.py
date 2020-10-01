@@ -1,4 +1,4 @@
-# Copyright 2019 Hewlett Packard Enterprise Development LP
+# Copyright 2019-2020 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -15,6 +15,7 @@
 __author__ = 'HPE'
 
 from sdflexutils.redfish.resources.system import secure_boot
+from sdflexutils.redfish.resources.system import virtual_media as hpe_vmedia
 from sdflexutils.redfish import utils
 from sushy.resources.system import system
 from sushy import utils as sushy_utils
@@ -28,6 +29,8 @@ class HPESystem(system.System):
     """
 
     _secure_boot = None  # ref to SecureBoot instance
+
+    vmedia = hpe_vmedia.VirtualMediaConfigField('VirtualMediaConfig')
 
     @property
     @sushy_utils.cache_it
