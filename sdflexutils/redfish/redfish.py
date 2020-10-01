@@ -1,4 +1,4 @@
-# Copyright 2019 Hewlett Packard Enterprise Development LP
+# Copyright 2019-2020 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -13,6 +13,7 @@
 # under the License.
 
 __author__ = 'HPE'
+import collections
 
 from sdflexutils import exception
 from sdflexutils import log
@@ -20,6 +21,7 @@ from sdflexutils.redfish import main
 from sdflexutils.redfish.resources.system import constants as sys_cons
 import sushy
 from sushy import auth
+from sushy.resources.manager import virtual_media
 
 """
 Class specific for Redfish APIs.
@@ -40,6 +42,11 @@ POWER_RESET_MAP = {
 GET_SECUREBOOT_CURRENT_BOOT_MAP = {
     sys_cons.SECUREBOOT_CURRENT_BOOT_ENABLED: True,
     sys_cons.SECUREBOOT_CURRENT_BOOT_DISABLED: False
+}
+
+VMEDIA_DEVICES = {
+    sys_cons.VIRTUALMEDIA_DEVICE0: 'redfish/v1/Systems/Partition0/VirtualMedia/CD0',
+    sys_cons.VIRTUALMEDIA_DEVICE1: 'redfish/v1/Systems/Partition0/VirtualMedia/CD1'
 }
 
 
@@ -340,3 +347,85 @@ class RedfishOperations(object):
                    {'file': file_url, 'error': str(e)})
             LOG.debug(msg)
             raise exception.SDFlexError(msg)
+
+    def validate_vmedia_device(self, device):
+        if device not in VMEDIA_DEVICES:
+            msg = (self._('The "%(device)s" is not a valid vmedia device.')
+                   % {'device': device})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
+        else:
+            return True
+
+    def eject_vmedia(self, device):
+        """Ejects the iso from the vmedia
+
+        :raises: SDFlexError if this function couldnot eject the vmedia
+        """
+        if self.validate_vmedia_device(device):
+            vmedia_partition_id = VMEDIA_DEVICES[device]
+            try:
+                self.sys_virtual_media = virtual_media.VirtualMedia(
+                    self._sushy._conn, vmedia_partition_id)
+                self.sys_virtual_media.eject_media()
+            except sushy.exceptions.SushyError as e:
+                msg = (self._('The Redfish System "%(partition_id)s" was '
+                              'not found. Error %(error)s') %
+                       {'partition_id': vmedia_partition_id, 'error': str(e)})
+                LOG.debug(msg)
+                raise exception.SDFlexError(msg)
+
+    def insert_vmedia(self, image, device, inserted=True,
+                      write_protected=False):
+        """Insert's the iso inside the vmedia
+
+        :param image: The location of image which is on NFS/CIFS
+        :raises: SDFlexError if this function could not eject the vmedia
+        """
+
+        if self.validate_vmedia_device(device):
+            vmedia_partition_id = VMEDIA_DEVICES[device]
+            try:
+                self.sys_virtual_media = virtual_media.VirtualMedia(
+                    self._sushy._conn, vmedia_partition_id)
+                self.sys_virtual_media.insert_media(image, inserted,
+                                                    write_protected)
+
+            except sushy.exceptions.SushyError as e:
+                msg = (self._('The "%(device)s" is not a valid vmedia device.'
+                              'Error %(error)s')
+                       % {'device': device, 'error': str(e)})
+                LOG.debug(msg)
+                raise exception.SDFlexError(msg)
+
+    def get_vmedia_status(self):
+        """Returns the Virtual Media state whether it is Enabled or Disabled"""
+
+        try:
+            sushy_system = self._get_sushy_system()
+            vmedia_status = sushy_system.vmedia.service_enabled
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('The vmedia is not found. Error '
+                          '%(error)s') %
+                   {'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
+        return vmedia_status
+
+    def enable_vmedia(self, set_vmedia_state):
+        """Set's the Virtual Media state on the Sdflex Machine
+
+        :params set_vmedia_state:To which state we have to set the vmedia
+        :raises : SdflexError if a valid value is not passed to set the vmedia
+        """
+        if not isinstance(set_vmedia_state, bool):
+            msg = ('The parameter "%(parameter)s" value "%(value)s" for '
+                   'vmedia is invalid. Valid values are: True/False.' %
+                   {'parameter': 'ServiceEnabled',
+                    'value': set_vmedia_state})
+            raise exception.InvalidInputError(msg)
+        data = collections.defaultdict(dict)
+        sushy_system = self._get_sushy_system()
+        data['VirtualMediaConfig']['ServiceEnabled'] = set_vmedia_state
+
+        self._sushy._conn.patch(sushy_system._path, data=data)
