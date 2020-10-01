@@ -14,6 +14,7 @@
 #    under the License.
 
 
+import collections
 import json
 
 import ddt
@@ -312,3 +313,19 @@ class RedfishOperationsTestCase(testtools.TestCase):
             exception.SDFlexError,
             'The Redfish controller failed to update firmware',
             self.sdflex_client.update_firmware, 'fw_file_url')
+        
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_get_vmedia_status(self, get_system_mock):
+        with open('sdflexutils/tests/unit/redfish/'
+                  'json_samples/vmedia_config.json', 'r') as f:
+            json_data = json.loads(f.read()).get("VirtualMediaConfig")     
+        get_system_mock.return_value.vmedia.service_enabled = json_data
+        actual_vmedia_status_data = self.sdflex_client.get_vmedia_status()
+        expected = {"ServiceEnabled": True}
+        self.assertEqual(expected, actual_vmedia_status_data)
+
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_get_vmedia_status_fail(self, get_system_mock):
+        get_system_mock.side_effect=sushy.exceptions.SushyError
+        self.assertRaises(exception.SDFlexError,
+            self.sdflex_client.get_vmedia_status)
