@@ -105,6 +105,12 @@
          "State":"Enabled"
       },
       "SystemType":"PhysicallyPartitioned",
-      "UUID":"c1e02112-c802-5ed5-a65f-ccf24bbda628"
+      "UUID":"c1e02112-c802-5ed5-a65f-ccf24bbda628",
+      "VirtualMedia": {
+        "@odata.id": "/redfish/v1/Systems/Partition0/VirtualMedia"
+      },
+	  "VirtualMediaConfig": {
+	        "ServiceEnabled": true
+	  }
    }
 }
