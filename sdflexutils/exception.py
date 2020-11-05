@@ -1,5 +1,5 @@
 # Copyright 2014 Hewlett-Packard Development Company, L.P.
-# Copyright 2019 Hewlett Packard Enterprise Development LP
+# Copyright 2019-2020 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -132,3 +132,42 @@ class StorcliOperationError(StorcliException):
 
     message = ("An error was encountered while doing storcli configuration: "
                "%(reason)s.")
+
+
+class ImageRefValidationFailed(SDFlexUtilsException):
+    message = ("Validation of image href %(image_href)s failed, "
+               "reason: %(reason)s")
+
+    def __init__(self, message=None, **kwargs):
+        if not message:
+            message = self.message % kwargs
+
+        super(ImageRefValidationFailed, self).__init__(message)
+
+
+class ImageRefDownloadFailed(SDFlexUtilsException):
+    message = ("Downloading image href %(image_href)s failed, "
+               "reason: %(reason)s")
+
+    def __init__(self, message=None, **kwargs):
+        if not message:
+            message = self.message % kwargs
+
+        super(ImageRefDownloadFailed, self).__init__(message)
+
+
+class SUMOperationError(SDFlexUtilsException):
+    """SUM based firmware update operation error.
+
+    This exception is used when a problem is encountered in
+    executing a SUM operation.
+    """
+
+    message = ("An error occurred while performing SUM based firmware "
+               "update, reason: %(reason)s")
+
+    def __init__(self, message=None, **kwargs):
+        if not message:
+            message = self.message % kwargs
+
+        super(SUMOperationError, self).__init__(message)
