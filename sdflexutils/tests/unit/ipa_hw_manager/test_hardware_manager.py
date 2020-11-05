@@ -1,5 +1,5 @@
 # Copyright 2015 Hewlett-Packard Development Company, L.P.
-# Copyright 2019 Hewlett Packard Enterprise Development LP
+# Copyright 2019-2020 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -25,6 +25,7 @@ from sdflexutils.hpssa import objects as hpssa_objects
 from sdflexutils.ipa_hw_manager import hardware_manager
 from sdflexutils.storcli import manager as storcli_manager
 from sdflexutils.storcli import storcli
+from sdflexutils.sum import sum_controller
 import testtools
 
 ironic_python_agent = importutils.try_import('ironic_python_agent')
@@ -46,6 +47,9 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
               'priority': 0},
              {'step': 'erase_devices',
               'interface': 'deploy',
+              'priority': 0},
+             {'step': 'update_firmware_sum',
+              'interface': 'management',
               'priority': 0}],
             self.hardware_manager.get_clean_steps("", ""))
 
@@ -368,3 +372,11 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
         generic_erase_mock.assert_called_once_with(node, port)
         self.assertEqual({'Disk Erase Status': 'Erase Completed',
                           'foo': 'bar'}, ret)
+
+    @mock.patch.object(sum_controller, 'update_firmware')
+    def test_update_firmware_sum(self, update_mock):
+        update_mock.return_value = "log files"
+        node = {'foo': 'bar'}
+        ret = self.hardware_manager.update_firmware_sum(node, "")
+        update_mock.assert_called_once_with(node)
+        self.assertEqual('log files', ret)
