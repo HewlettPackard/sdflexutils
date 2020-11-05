@@ -1,5 +1,5 @@
 # Copyright 2015 Hewlett-Packard Development Company, L.P.
-# Copyright 2019 Hewlett Packard Enterprise Development LP
+# Copyright 2019-2020 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -23,6 +23,7 @@ from sdflexutils.hpssa import manager as hpssa_manager
 from sdflexutils.hpssa import objects as hpssa_objects
 from sdflexutils.storcli import manager as storcli_manager
 from sdflexutils.storcli import storcli
+from sdflexutils.sum import sum_controller
 
 
 class SDFlexHardwareManager(hardware.GenericHardwareManager):
@@ -51,6 +52,9 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
                  'priority': 0},
                 {'step': 'erase_devices',
                  'interface': 'deploy',
+                 'priority': 0},
+                {'step': 'update_firmware_sum',
+                 'interface': 'management',
                  'priority': 0}]
 
     def evaluate_hardware_support(cls):
@@ -199,3 +203,17 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
         result.update(super(SDFlexHardwareManager,
                             self).erase_devices(node, port))
         return result
+
+    def update_firmware_sum(self, node):
+        """Performs SUM based firmware update on the bare metal node.
+
+        This method performs firmware update on all or some of the firmware
+        components on the bare metal node.
+
+        :param node: A dictionary of the node object.
+        :returns: A string with return code and the statistics of
+            updated/failed components.
+        :raises: SUMOperationError, when the SUM based firmware update
+            operation on the node fails.
+        """
+        return sum_controller.update_firmware(node)
