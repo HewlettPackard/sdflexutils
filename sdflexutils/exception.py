@@ -132,3 +132,24 @@ class StorcliOperationError(StorcliException):
 
     message = ("An error was encountered while doing storcli configuration: "
                "%(reason)s.")
+
+class ImageRefValidationFailed(SDFlexUtilsException):
+    message = ("Validation of image href %(image_href)s failed, "
+               "reason: %(reason)s")
+
+    def __init__(self, message=None, **kwargs):
+        if not message:
+            message = self.message % kwargs
+
+        super(ImageRefValidationFailed, self).__init__(message)
+
+
+class ImageRefDownloadFailed(SDFlexUtilsException):
+    message = ("Downloading image href %(image_href)s failed, "
+               "reason: %(reason)s")
+
+    def __init__(self, message=None, **kwargs):
+        if not message:
+            message = self.message % kwargs
+
+        super(ImageRefDownloadFailed, self).__init__(message)
