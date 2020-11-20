@@ -14,12 +14,13 @@
 
 __author__ = 'HPE'
 
-from sdflexutils.redfish.resources.system import secure_boot
-from sdflexutils.redfish import utils
-
 from sushy.resources import base
 from sushy.resources.system import system
 from sushy import utils as sushy_utils
+
+from sdflexutils.redfish.resources.system import httpbooturi
+from sdflexutils.redfish.resources.system import secure_boot
+from sdflexutils.redfish import utils
 
 
 class HPESystem(system.System):
@@ -45,3 +46,10 @@ class HPESystem(system.System):
         return secure_boot.SecureBoot(
             self._conn, utils.get_subresource_path_by(self, 'SecureBoot'),
             redfish_version=self.redfish_version)
+
+    @property
+    def http_boot_uri(self):
+        """Property to provide reference to 'HTTPBootUri' instance"""
+
+        return httpbooturi.HttpBootURI(self._conn, self._path,
+                                       redfish_version=self.redfish_version)

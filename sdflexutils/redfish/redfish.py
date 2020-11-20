@@ -453,6 +453,7 @@ class RedfishOperations(object):
         :params set_vmedia_state:To which state we have to set the vmedia
         :raises : SdflexError if a valid value is not passed to set the vmedia
         """
+
         if not isinstance(set_vmedia_state, bool):
             msg = ('The parameter "%(parameter)s" value "%(value)s" for '
                    'vmedia is invalid. Valid values are: True/False.' %
@@ -462,3 +463,34 @@ class RedfishOperations(object):
         sushy_system = self._get_sushy_system()
         sdflex_virtual_media.VirtualMedia.enable_vmedia(sushy_system,
                                                         set_vmedia_state)
+
+    def get_http_boot_uri(self):
+        """Returns the HTTP Boot URI"""
+        try:
+            sushy_system = self._get_sushy_system()
+            http_boot_uri = sushy_system.http_boot_uri.httpbooturi
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('Not able to find HTTP Boot URI. Error: '
+                          '%(error)s') %
+                   {'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
+        return http_boot_uri
+
+    def set_http_boot_uri(self, url):
+        """Set's the HTTPBootUri on the Sdflex Machine
+
+        :params url:From which the machine will boot when it is booted via
+                    UEFIHTTP boot mode.
+        :raises : SdflexError if a valid value is not passed to set the
+                  httpbooturi
+        """
+        try:
+            sushy_system = self._get_sushy_system()
+            sushy_system.http_boot_uri.set_http_boot_uri(url)
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('Unable to set HTTP Boot URI. Error '
+                          '%(error)s') %
+                   {'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
