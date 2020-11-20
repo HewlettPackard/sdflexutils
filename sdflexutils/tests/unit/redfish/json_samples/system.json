@@ -43,7 +43,8 @@
             "UefiHttp",
             "UefiShell",
             "Usb"
-         ]
+         ],
+         "HttpBootUri": "http://1.2.3.4/boot.efi"
       },
       "HostName":null,
       "Id":"Partition1",
@@ -108,9 +109,6 @@
       "UUID":"c1e02112-c802-5ed5-a65f-ccf24bbda628",
       "VirtualMedia": {
         "@odata.id": "/redfish/v1/Systems/Partition0/VirtualMedia"
-      },
-	  "VirtualMediaConfig": {
-	        "ServiceEnabled": true
-	  }
+      }
    }
 }
