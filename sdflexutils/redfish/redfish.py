@@ -380,7 +380,8 @@ class RedfishOperations(object):
         """Insert's the iso inside the vmedia
 
         :param image: The location of image which is on NFS/CIFS
-        :remote_server_data : This dictionary contains remote image server details
+        :remote_server_data : This dictionary contains remote image server
+                              details
         :raises: SDFlexError if this function could not eject the vmedia
         """
         if self.validate_vmedia_device(device):
@@ -409,9 +410,10 @@ class RedfishOperations(object):
                     self._sushy._conn.post(target_uri, data=input_data)
                 else:
                     msg = (self._('The %(remote_image_share_type)s is not a '
-                                  'valid remote_image_share_type.') %
-                                 {'remote_image_share_type':
-                                  remote_server_data['remote_image_share_type']})
+                                  'valid remote_image_share_type.') % {
+                                  'remote_image_share_type':
+                                  remote_server_data['remote_image_share_type']
+                                  })
                     LOG.debug(msg)
                     raise exception.SDFlexError(msg)
             except sushy.exceptions.SushyError as e:
@@ -441,6 +443,7 @@ class RedfishOperations(object):
         :params set_vmedia_state:To which state we have to set the vmedia
         :raises : SdflexError if a valid value is not passed to set the vmedia
         """
+
         if not isinstance(set_vmedia_state, bool):
             msg = ('The parameter "%(parameter)s" value "%(value)s" for '
                    'vmedia is invalid. Valid values are: True/False.' %
@@ -450,5 +453,44 @@ class RedfishOperations(object):
         data = collections.defaultdict(dict)
         sushy_system = self._get_sushy_system()
         data['VirtualMediaConfig']['ServiceEnabled'] = set_vmedia_state
+        try:
+            self._sushy._conn.patch(sushy_system._path, data=data)
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('Unable to enable the vmedia is not found. Error: '
+                          '%(error)s') %
+                   {'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
 
-        self._sushy._conn.patch(sushy_system._path, data=data)
+    def get_http_boot_uri(self):
+        """Returns the HTTP Boot URI"""
+
+        try:
+            sushy_system = self._get_sushy_system()
+            boot_data = dict(sushy_system._json).get('Boot')
+            http_boot_uri = boot_data.get('HttpBootUri')
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('Not able to find HTTP Boot URI. Error: '
+                          '%(error)s') %
+                   {'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
+        return http_boot_uri
+
+    def set_http_boot_uri(self, url):
+        """Set's the Virtual Media state on the Sdflex Machine
+
+        :params set_vmedia_state:To which state we have to set the vmedia
+        :raises : SdflexError if a valid value is not passed to set the vmedia
+        """
+        try:
+            sushy_system = self._get_sushy_system()
+            data = collections.defaultdict(dict)
+            data['Boot']['HttpBootUri'] = url
+            self._sushy._conn.patch(sushy_system._path, data=data)
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('Unable to set HTTP Boot URI. Error '
+                          '%(error)s') %
+                   {'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)

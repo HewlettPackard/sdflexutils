@@ -395,3 +395,38 @@ class RedfishOperationsTestCase(testtools.TestCase):
                           {'remote_image_user_name': 'guest',
                            'remote_image_user_password': 'guest',
                            'remote_image_share_type': 'cifs'})
+
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_get_http_boot_uri(self, get_system_mock):
+        with open('sdflexutils/tests/unit/redfish/'
+                  'json_samples/http_boot_uri.json', 'r') as f:
+            json_data = json.loads(f.read()).get("default")
+        get_system_mock.return_value._json = json_data
+        actual_http_boot_uri_data = self.sdflex_client.get_http_boot_uri()
+        expected = 'http://1.2.3.4/bootx64.efi'
+        self.assertEqual(expected, actual_http_boot_uri_data)
+
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_get_http_boot_uri_error(self, get_system_mock):
+        get_system_mock.side_effect = sushy.exceptions.SushyError
+        self.assertRaises(exception.SDFlexError,
+                          self.sdflex_client.get_http_boot_uri)
+
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_set_http_boot_uri(self, get_system_mock):
+        self.sdflex_client.set_http_boot_uri('http://1.2.3.4/bootx64.efi')
+        expected_data = 'http://1.2.3.4/bootx64.efi'
+        with open('sdflexutils/tests/unit/redfish/'
+                  'json_samples/http_boot_uri.json', 'r') as f:
+            json_data = json.loads(f.read()).get("default")
+        get_system_mock.return_value._json = json_data
+        actual_http_boot_uri_data = self.sdflex_client.get_http_boot_uri()
+        self.assertEqual(expected_data, actual_http_boot_uri_data)
+
+#     @mock.patch.object(sushy.connector.Connector, 'patch')
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_set_http_boot_uri_error(self, get_system_mock):
+        get_system_mock.side_effect = sushy.exceptions.SushyError
+        self.assertRaises(exception.SDFlexError,
+                          self.sdflex_client.set_http_boot_uri,
+                          'some-non-boolean')

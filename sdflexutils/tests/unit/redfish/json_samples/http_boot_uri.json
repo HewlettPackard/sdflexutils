@@ -1,0 +1,59 @@
+{
+"default":{
+	"Boot": {
+        "BootNext": null,
+        "BootOptions": {
+            "@odata.id": "/redfish/v1/Systems/Partition0/BootOptions"
+        },
+        "BootOrder": [
+            "Boot0017",
+            "Boot0015",
+            "Boot0016",
+            "Boot0001",
+            "Boot0002",
+            "Boot0003",
+            "Boot0004",
+            "Boot0005",
+            "Boot0006",
+            "Boot0007",
+            "Boot0008",
+            "Boot0009",
+            "Boot000A",
+            "Boot000B",
+            "Boot000C",
+            "Boot000D",
+            "Boot000E",
+            "Boot000F",
+            "Boot0010",
+            "Boot0011",
+            "Boot0012",
+            "Boot0000"
+        ],
+        "BootSourceOverrideEnabled": "Disabled",
+        "BootSourceOverrideEnabled@Redfish.AllowableValues": [
+            "Continuous",
+            "Disabled",
+            "Once"
+        ],
+        "BootSourceOverrideMode": "UEFI",
+        "BootSourceOverrideMode@Redfish.AllowableValues": [
+            "UEFI"
+        ],
+        "BootSourceOverrideTarget": "None",
+        "BootSourceOverrideTarget@Redfish.AllowableValues": [
+            "None",
+            "BiosSetup",
+            "Cd",
+            "Hdd",
+            "Pxe",
+            "RemoteDrive",
+            "SDCard",
+            "UefiBootNext",
+            "UefiHttp",
+            "UefiShell",
+            "Usb"
+        ],
+        "HttpBootUri": "http://1.2.3.4/bootx64.efi"
+    }
+	}
+}
