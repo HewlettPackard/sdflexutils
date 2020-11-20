@@ -21,6 +21,7 @@ from sdflexutils.redfish import main
 from sdflexutils.redfish.resources.system import constants as sys_cons
 from sdflexutils.redfish.resources.system import (
     virtual_media as sdflex_virtual_media)
+from sdflexutils.redfish.resources.system import httpbooturi
 import sushy
 from sushy import auth
 from sushy.resources.manager import virtual_media
@@ -453,6 +454,7 @@ class RedfishOperations(object):
         :params set_vmedia_state:To which state we have to set the vmedia
         :raises : SdflexError if a valid value is not passed to set the vmedia
         """
+
         if not isinstance(set_vmedia_state, bool):
             msg = ('The parameter "%(parameter)s" value "%(value)s" for '
                    'vmedia is invalid. Valid values are: True/False.' %
@@ -462,3 +464,32 @@ class RedfishOperations(object):
         sushy_system = self._get_sushy_system()
         sdflex_virtual_media.VirtualMedia.enable_vmedia(sushy_system,
                                                         set_vmedia_state)
+
+    def get_http_boot_uri(self):
+        """Returns the HTTP Boot URI"""
+        try:
+            sushy_system = self._get_sushy_system()
+            http_boot_uri = sushy_system.http_boot_uri
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('Not able to find HTTP Boot URI. Error: '
+                          '%(error)s') %
+                   {'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
+        return http_boot_uri
+
+    def set_http_boot_uri(self, url):
+        """Set's the Virtual Media state on the Sdflex Machine
+
+        :params set_vmedia_state:To which state we have to set the vmedia
+        :raises : SdflexError if a valid value is not passed to set the vmedia
+        """
+        try:
+            sushy_system = self._get_sushy_system()
+            httpbooturi.HttpBootURI.set_http_boot_uri(sushy_system, url)
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('Unable to set HTTP Boot URI. Error '
+                          '%(error)s') %
+                   {'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
