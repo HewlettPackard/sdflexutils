@@ -394,3 +394,36 @@ class RedfishOperationsTestCase(testtools.TestCase):
                           {'remote_image_user_name': 'guest',
                            'remote_image_user_password': 'guest',
                            'remote_image_share_type': 'cifs'})
+
+    def test_get_http_boot_uri(self):
+        sushy_system_mock = self.sushy.get_system.return_value
+        type(sushy_system_mock).http_boot_uri = mock.PropertyMock(
+            return_value='http://1.2.3.4/bootx64.efi')
+        actual_http_boot_uri_data = self.sdflex_client.get_http_boot_uri()
+        expected = 'http://1.2.3.4/bootx64.efi'
+        self.assertEqual(expected, actual_http_boot_uri_data)
+        self.assertTrue(self.sdflex_client.get_http_boot_uri())
+
+    def test_get_http_boot_uri_error(self):
+        sushy_system_mock = self.sushy.get_system.return_value
+        type(sushy_system_mock).http_boot_uri = mock.PropertyMock(
+            side_effect=sushy.exceptions.SushyError)
+        self.assertRaises(exception.SDFlexError,
+                          self.sdflex_client.get_http_boot_uri)
+
+    def test_set_http_boot_uri(self):
+        self.sdflex_client.set_http_boot_uri('http://1.2.3.4/bootx64.efi')
+        expected_data = 'http://1.2.3.4/bootx64.efi'
+        sushy_system_mock = self.sushy.get_system.return_value
+        type(sushy_system_mock).http_boot_uri = mock.PropertyMock(
+            return_value=expected_data)
+        actual_http_boot_uri_data = self.sdflex_client.get_http_boot_uri()
+        self.assertEqual(expected_data, actual_http_boot_uri_data)
+        self.assertTrue(self.sdflex_client.set_http_boot_uri, expected_data)
+
+    @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
+    def test_set_http_boot_uri_error(self, get_system_mock):
+        get_system_mock.side_effect = sushy.exceptions.SushyError
+        self.assertRaises(exception.SDFlexError,
+                          self.sdflex_client.set_http_boot_uri,
+                          'some-non-url')
