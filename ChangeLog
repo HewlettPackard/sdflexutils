@@ -1,6 +1,13 @@
 CHANGES
 =======
 
+* Enabling Vmedia support for sdflex machines
+* Updating requirments.txt for Openstack Ussuri Release
+
+1.1.0
+-----
+
+* Setting Sushy version according to Openstack T release
 * Changes required for pypi packaging
 * Adding raid configuration support using storcli
 * Adding disk erase support using storcli

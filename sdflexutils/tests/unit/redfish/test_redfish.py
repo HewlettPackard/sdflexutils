@@ -62,7 +62,6 @@ class RedfishOperationsTestCase(testtools.TestCase):
         power_state = self.sdflex_client.get_host_power_status()
         self.assertEqual('ON', power_state)
 
-
     def test_reset_server(self):
         self.sdflex_client.reset_server()
         self.sushy.get_system().reset_system.assert_called_once_with(
