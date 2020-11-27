@@ -45,8 +45,10 @@ GET_SECUREBOOT_CURRENT_BOOT_MAP = {
 }
 
 VMEDIA_DEVICES = {
-    sys_cons.VIRTUALMEDIA_DEVICE0: 'redfish/v1/Systems/Partition0/VirtualMedia/CD0',
-    sys_cons.VIRTUALMEDIA_DEVICE1: 'redfish/v1/Systems/Partition0/VirtualMedia/CD1'
+    sys_cons.VIRTUALMEDIA_DEVICE0:
+        'redfish/v1/Systems/Partition0/VirtualMedia/CD0',
+    sys_cons.VIRTUALMEDIA_DEVICE1:
+        'redfish/v1/Systems/Partition0/VirtualMedia/CD1'
 }
 
 
@@ -380,7 +382,8 @@ class RedfishOperations(object):
         """Insert's the iso inside the vmedia
 
         :param image: The location of image which is on NFS/CIFS
-        :remote_server_data : This dictionary contains remote image server details
+        :remote_server_data : This dictionary contains remote image server
+                              details
         :raises: SDFlexError if this function could not eject the vmedia
         """
         if self.validate_vmedia_device(device):
@@ -398,20 +401,23 @@ class RedfishOperations(object):
                     # Incase of CIFS  as image share type. We use
                     # normal post to insert the image url into Vmedia device
                     input_data = collections.defaultdict(dict)
-                    input_data['UserName'] = remote_server_data['remote_image_user_name']
-                    input_data['Password'] = remote_server_data['remote_image_user_password']
+                    input_data['UserName'] = (
+                        remote_server_data['remote_image_user_name'])
+                    input_data['Password'] = (
+                        remote_server_data['remote_image_user_password'])
                     input_data['Image'] = image
                     input_data['Inserted'] = inserted
                     input_data['WriteProtected'] = write_protected
 
-                    target_uri = self.sys_virtual_media._actions.insert_media.target_uri
+                    target_uri = self.sys_virtual_media._actions.insert_media.target_uri  # noqa
 
                     self._sushy._conn.post(target_uri, data=input_data)
                 else:
                     msg = (self._('The %(remote_image_share_type)s is not a '
-                                  'valid remote_image_share_type.') %
-                                 {'remote_image_share_type':
-                                  remote_server_data['remote_image_share_type']})
+                           'valid remote_image_share_type.') %
+                           {'remote_image_share_type': (
+                            remote_server_data['remote_image_share_type'])}
+                           )
                     LOG.debug(msg)
                     raise exception.SDFlexError(msg)
             except sushy.exceptions.SushyError as e:
