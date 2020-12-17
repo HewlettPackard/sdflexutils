@@ -54,10 +54,47 @@ class HPESushyTestCase(testtools.TestCase):
                                             self.hpe_sushy.redfish_version)
 
     @mock.patch.object(update_service, 'HPEUpdateService', autospec=True)
-    def test_get_update_service(self, mock_update_service):
+    def test_get_update_service_ah(self, mock_update_service):
+        self.hpe_sushy._get_action_list = mock.Mock()
+        self.hpe_sushy._get_action_list.return_value = [
+            'Oem', 'Hpe', '#SDFlexUpdateService.UpdateAll']
         us_inst = self.hpe_sushy.get_update_service()
         self.assertIsInstance(us_inst,
                               update_service.HPEUpdateService.__class__)
         mock_update_service.assert_called_once_with(
             self.hpe_sushy._conn, "/redfish/v1/UpdateService",
             redfish_version=self.hpe_sushy.redfish_version)
+
+    @mock.patch.object(update_service, 'HPEUpdateService', autospec=True)
+    def test_get_update_service_ch(self, mock_update_service):
+        self.hpe_sushy._get_action_list = mock.Mock()
+        self.hpe_sushy._get_action_list.return_value = ['Oem',
+                                                        '#SD.UpdateAll']
+        us_inst = self.hpe_sushy.get_update_service()
+        self.assertIsInstance(us_inst,
+                              update_service.HPEUpdateService.__class__)
+        mock_update_service.assert_called_once_with(
+            self.hpe_sushy._conn, "/redfish/v1/UpdateService",
+            redfish_version=self.hpe_sushy.redfish_version)
+
+    def test__get_action_list_ah(self):
+        with open('sdflexutils/tests/unit/redfish/'
+                  'json_samples/update_service_ah.json', 'r') as f:
+            ret_mock = mock.Mock()
+            ret_mock.content = (f.read()).encode('ascii')
+            self.hpe_sushy._conn.get.return_value = ret_mock
+
+        self.assertEqual(
+            self.hpe_sushy._get_action_list("/redfish/v1/UpdateService"),
+            ['Oem', 'Hpe', '#SDFlexUpdateService.UpdateAll'])
+
+    def test__get_action_list_ch(self):
+        with open('sdflexutils/tests/unit/redfish/'
+                  'json_samples/update_service_ch.json', 'r') as f:
+            ret_mock = mock.Mock()
+            ret_mock.content = (f.read()).encode('ascii')
+            self.hpe_sushy._conn.get.return_value = ret_mock
+
+        self.assertEqual(
+            self.hpe_sushy._get_action_list("/redfish/v1/UpdateService"),
+            ['Oem', '#SD.UpdateAll'])

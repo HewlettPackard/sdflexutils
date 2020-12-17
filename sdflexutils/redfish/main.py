@@ -14,11 +14,14 @@
 
 __author__ = 'HPE'
 
+import json
+
 from sdflexutils.redfish.resources.system import system
 from sdflexutils.redfish.resources import update_service
 from sdflexutils.redfish import utils
 import sushy
 from sushy import connector as sushy_connector
+from sushy.resources import common as sushy_common
 
 
 class HPESushy(sushy.Sushy):
@@ -69,6 +72,33 @@ class HPESushy(sushy.Sushy):
         return system.HPESystem(self._conn, identity,
                                 redfish_version=self.redfish_version)
 
+    def _get_action_list(self, update_service_url):
+        """Return a list with details of update service action.
+
+        The returned list is used for setting update_firmware class variable
+        in ActionsField at runtime.
+
+        :params update_service_url: The subresource path for update service
+        :returns: A list with action details
+
+        Example:
+            For AH machines, it returns ['Oem', 'Hpe',
+            '#SDFlexUpdateService.UpdateAll']
+            For CH machines, it returns ['Oem', '#SD.UpdateAll']
+        """
+        get_resp = self._conn.get(update_service_url)
+        action_dict = json.loads(
+            get_resp.content.decode('utf-8')).get('Actions')
+
+        def _get_action_list_helper(action_dict, my_list=[]):
+            for key, value in action_dict.items():
+                my_list.append(key)
+                if 'UpdateAll' in key:
+                    return my_list
+                return _get_action_list_helper(value, my_list)
+
+        return _get_action_list_helper(action_dict)
+
     def get_update_service(self):
         """Return a HPEUpdateService object
 
@@ -76,6 +106,11 @@ class HPESushy(sushy.Sushy):
         """
         update_service_url = utils.get_subresource_path_by(self,
                                                            'UpdateService')
+        action_list = self._get_action_list(update_service_url)
+        setattr(update_service.ActionsField, 'update_firmware',
+                sushy_common.ResetActionField(action_list))
+        setattr(update_service.HPEUpdateService, '_actions',
+                update_service.ActionsField(['Actions'], required=True))
         return (update_service.
                 HPEUpdateService(self._conn, update_service_url,
                                  redfish_version=self.redfish_version))
