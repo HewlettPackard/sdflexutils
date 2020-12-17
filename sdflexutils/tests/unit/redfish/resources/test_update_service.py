@@ -22,6 +22,7 @@ from sdflexutils.redfish import main
 from sdflexutils.redfish import redfish
 from sdflexutils.redfish.resources import update_service
 import sushy
+from sushy.resources import common as sushy_common
 import testtools
 
 
@@ -34,12 +35,17 @@ class HPEUpdateServiceTestCase(testtools.TestCase):
         self.sushy = mock.MagicMock()
         sushy_mock.return_value = self.sushy
         with open('sdflexutils/tests/unit/redfish/'
-                  'json_samples/update_service.json', 'r') as f:
+                  'json_samples/update_service_ah.json', 'r') as f:
             self.conn.get.return_value.json.return_value = json.loads(f.read())
 
         self.sdflex_client = redfish.RedfishOperations(
             'https://1.2.3.4', username='foo', password='bar',
             partition_id='redfish/v1/Systems/Partition1', cacert=None)
+        action_list = ['Oem', 'Hpe', '#SDFlexUpdateService.UpdateAll']
+        setattr(update_service.ActionsField, 'update_firmware',
+                sushy_common.ResetActionField(action_list))
+        setattr(update_service.HPEUpdateService, '_actions',
+                update_service.ActionsField(['Actions'], required=True))
         self.us_inst = update_service.HPEUpdateService(
             self.conn, '/redfish/v1/UpdateService/1',
             redfish_version='1.0.2')

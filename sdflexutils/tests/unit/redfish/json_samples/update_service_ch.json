@@ -1,0 +1,29 @@
+{
+    "@odata.id": "/redfish/v1/UpdateService",
+    "@odata.type": "#UpdateService.v1_8_0.UpdateService",
+    "Actions": {
+        "Oem": {
+            "#SD.UpdateAll": {
+                "@Redfish.ActionInfo": "/redfish/v1/UpdateService/UpdateAllActionInfo",
+                "target": "/redfish/v1/UpdateService/Actions/Oem/SD.UpdateAll"
+            }
+        }
+    },
+    "FirmwareInventory": {
+        "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory"
+    },
+    "Id": "UpdateService",
+    "Name": "Update Service",
+    "Oem": {
+        "Hpe": {
+            "@odata.type": "#HpeUpdateService.v1_0_0.HpeUpdateService",
+            "OnlineUpdatesSupported": true
+        }
+    },
+    "ServiceEnabled": true,
+    "Status": {
+        "Health": "OK",
+        "HealthRollup": "OK",
+        "State": "Enabled"
+    }
+}

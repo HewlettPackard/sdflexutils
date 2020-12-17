@@ -1,6 +1,14 @@
 CHANGES
 =======
 
+1.2.1
+-----
+
+* Adding firmware update support for sdflex 280
+
+1.2.0
+-----
+
 * Enabling Vmedia support for sdflex machines
 * Updating requirments.txt for Openstack Ussuri Release
 
