@@ -1,4 +1,4 @@
-# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -13,7 +13,6 @@
 # under the License.
 
 __author__ = 'HPE'
-
 from sushy.resources import base
 
 
@@ -22,3 +21,11 @@ class VirtualMediaConfigField(base.CompositeField):
 
     service_enabled = base.Field('ServiceEnabled')
     """vmedia status"""
+
+
+class VirtualMedia(object):
+    """Class that extends the functionality of Virtual Media"""
+
+    @staticmethod
+    def insert_vmedia_cifs(sushy_system, target_uri, data):
+        sushy_system._conn.post(target_uri, data=data)
