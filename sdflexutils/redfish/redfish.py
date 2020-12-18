@@ -19,9 +19,11 @@ from sdflexutils import exception
 from sdflexutils import log
 from sdflexutils.redfish import main
 from sdflexutils.redfish.resources.system import constants as sys_cons
+from sdflexutils.redfish.resources.system import virtual_media as sdflex_virtual_media  # noqa E501
 import sushy
 from sushy import auth
 from sushy.resources.manager import virtual_media
+
 
 """
 Class specific for Redfish APIs.
@@ -367,9 +369,9 @@ class RedfishOperations(object):
         if self.validate_vmedia_device(device):
             vmedia_partition_id = VMEDIA_DEVICES[device]
             try:
-                self.sys_virtual_media = virtual_media.VirtualMedia(
+                virtual_media_object = virtual_media.VirtualMedia(
                     self._sushy._conn, vmedia_partition_id)
-                self.sys_virtual_media.eject_media()
+                virtual_media_object.eject_media()
             except sushy.exceptions.SushyError as e:
                 msg = (self._('The Redfish System "%(partition_id)s" was '
                               'not found. Error %(error)s') %
@@ -386,17 +388,19 @@ class RedfishOperations(object):
                               details
         :raises: SDFlexError if this function could not eject the vmedia
         """
+        if not self.get_vmedia_status():
+            self.enable_vmedia(True)
         if self.validate_vmedia_device(device):
             vmedia_partition_id = VMEDIA_DEVICES[device]
             try:
-                self.sys_virtual_media = virtual_media.VirtualMedia(
+                virtual_media_object = virtual_media.VirtualMedia(
                     self._sushy._conn, vmedia_partition_id)
                 if remote_server_data['remote_image_share_type'] == 'nfs':
                     # Incase of NFS as image share type. We use sushy object
                     # and sushy function to insert the image url into
                     # Vmedia device
-                    self.sys_virtual_media.insert_media(image, inserted,
-                                                        write_protected)
+                    virtual_media_object.insert_media(image, inserted,
+                                                      write_protected)
                 elif remote_server_data['remote_image_share_type'] == 'cifs':
                     # Incase of CIFS  as image share type. We use
                     # normal post to insert the image url into Vmedia device
@@ -409,9 +413,10 @@ class RedfishOperations(object):
                     input_data['Inserted'] = inserted
                     input_data['WriteProtected'] = write_protected
 
-                    target_uri = self.sys_virtual_media._actions.insert_media.target_uri  # noqa E501
-
-                    self._sushy._conn.post(target_uri, data=input_data)
+                    sushy_system = self._get_sushy_system()
+                    target_uri = virtual_media_object._actions.insert_media.target_uri  # noqa E501
+                    sdflex_virtual_media.VirtualMedia.insert_vmedia_cifs(
+                        sushy_system, target_uri, data=input_data)
                 else:
                     msg = (self._('The %(remote_image_share_type)s is not a '
                            'valid remote_image_share_type.') %
@@ -432,7 +437,7 @@ class RedfishOperations(object):
 
         try:
             sushy_system = self._get_sushy_system()
-            vmedia_status = sushy_system.vmedia.service_enabled
+            vmedia_status = sushy_system.vmedia
         except sushy.exceptions.SushyError as e:
             msg = (self._('The vmedia is not found. Error '
                           '%(error)s') %
@@ -453,8 +458,6 @@ class RedfishOperations(object):
                    {'parameter': 'ServiceEnabled',
                     'value': set_vmedia_state})
             raise exception.InvalidInputError(msg)
-        data = collections.defaultdict(dict)
         sushy_system = self._get_sushy_system()
-        data['VirtualMediaConfig']['ServiceEnabled'] = set_vmedia_state
-
-        self._sushy._conn.patch(sushy_system._path, data=data)
+        sdflex_virtual_media.VirtualMedia.enable_vmedia(sushy_system,
+                                                        set_vmedia_state)

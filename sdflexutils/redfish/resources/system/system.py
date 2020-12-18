@@ -15,8 +15,8 @@
 __author__ = 'HPE'
 
 from sdflexutils.redfish.resources.system import secure_boot
-from sdflexutils.redfish.resources.system import virtual_media as hpe_vmedia
 from sdflexutils.redfish import utils
+from sushy.resources import base
 from sushy.resources.system import system
 from sushy import utils as sushy_utils
 
@@ -30,7 +30,7 @@ class HPESystem(system.System):
 
     _secure_boot = None  # ref to SecureBoot instance
 
-    vmedia = hpe_vmedia.VirtualMediaConfigField('VirtualMediaConfig')
+    vmedia = base.Field(['VirtualMediaConfig', 'ServiceEnabled'])
 
     @property
     @sushy_utils.cache_it
