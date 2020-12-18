@@ -1,6 +1,14 @@
 CHANGES
 =======
 
+1.1.1
+-----
+
+* Adding firmware update support for sdflex 280
+
+1.1.0
+-----
+
 * Changes required for pypi packaging
 * Adding raid configuration support using storcli
 * Adding disk erase support using storcli

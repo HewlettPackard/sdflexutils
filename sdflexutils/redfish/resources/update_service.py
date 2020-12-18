@@ -20,7 +20,6 @@ from sdflexutils import log
 from sdflexutils.redfish import common
 import sushy
 from sushy.resources import base
-from sushy.resources import common as sushy_common
 
 
 LOG = log.get_logger(__name__)
@@ -28,8 +27,7 @@ LOG = log.get_logger(__name__)
 
 class ActionsField(base.CompositeField):
 
-    update_firmware = (sushy_common.ResetActionField(['Oem', 'Hpe',
-                       '#SDFlexUpdateService.UpdateAll']))
+    pass
 
 
 class HPEUpdateService(base.ResourceBase):
@@ -39,7 +37,6 @@ class HPEUpdateService(base.ResourceBase):
     from sushy
     """
     firmware_state = base.Field(['Oem', 'Hpe', 'State'])
-    _actions = ActionsField(['Actions'], required=True)
 
     def _get_firmware_update_element(self):
         """Get the url for firmware update
