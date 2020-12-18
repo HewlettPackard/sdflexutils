@@ -13,7 +13,6 @@
 # under the License.
 
 __author__ = 'HPE'
-
 from sushy.resources import base
 
 
@@ -22,3 +21,10 @@ class VirtualMediaConfigField(base.CompositeField):
 
     service_enabled = base.Field('ServiceEnabled')
     """vmedia status"""
+
+
+class VirtualMedia(object):
+
+    @staticmethod
+    def insert_vmedia_cifs(sushy_system, target_uri, data):
+        sushy_system._conn.post(target_uri, data=data)
