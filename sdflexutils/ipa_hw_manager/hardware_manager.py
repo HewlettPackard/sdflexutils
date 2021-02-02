@@ -1,5 +1,5 @@
 # Copyright 2015 Hewlett-Packard Development Company, L.P.
-# Copyright 2019-2020 Hewlett Packard Enterprise Development LP
+# Copyright 2019-2021 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -140,9 +140,9 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
                         except ValueError:
                             # The user specified controller is not a storcli
                             # controller. Check if it is an SSA controller
-                            # All SSA controllers for SDFlex have ids starting
-                            # with 'MSCC SmartRAID'
-                            if 'MSCC SmartRAID' in ld['controller']:
+                            # All SSA controllers for SDFlex have 'SmartRAID'
+                            # in their ids.
+                            if 'SmartRAID' in ld['controller']:
                                 hpssa_raid_config['logical_disks'].append(ld)
                     else:
                         # If no controller information is specified,
