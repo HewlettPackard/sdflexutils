@@ -140,9 +140,9 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
                         except ValueError:
                             # The user specified controller is not a storcli
                             # controller. Check if it is an SSA controller
-                            # All SSA controllers for SDFlex have ids starting
-                            # with 'MSCC SmartRAID'
-                            if 'MSCC SmartRAID' in ld['controller']:
+                            # All SSA controllers for SDFlex have 'SmartRAID'
+                            # in their ids.
+                            if 'SmartRAID' in ld['controller']:
                                 hpssa_raid_config['logical_disks'].append(ld)
                     else:
                         # If no controller information is specified,
