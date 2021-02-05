@@ -13,18 +13,17 @@
 # under the License.
 
 __author__ = 'HPE'
-from sushy.resources import base
-
-
-class VirtualMediaConfigField(base.CompositeField):
-    """A class representing Virtual Media resource"""
-
-    service_enabled = base.Field('ServiceEnabled')
-    """vmedia status"""
+import collections
 
 
 class VirtualMedia(object):
     """Class that extends the functionality of Virtual Media"""
+
+    @staticmethod
+    def enable_vmedia(sushy_system, set_vmedia_state):
+        data = collections.defaultdict(dict)
+        data['VirtualMediaConfig']['ServiceEnabled'] = set_vmedia_state
+        sushy_system._conn.patch(sushy_system._path, data=data)
 
     @staticmethod
     def insert_vmedia_cifs(sushy_system, target_uri, data):
