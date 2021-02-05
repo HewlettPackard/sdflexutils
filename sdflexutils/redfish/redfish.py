@@ -389,6 +389,8 @@ class RedfishOperations(object):
                               details
         :raises: SDFlexError if this function could not eject the vmedia
         """
+        if not self.get_vmedia_status():
+            self.enable_vmedia(True)
         if self.validate_vmedia_device(device):
             vmedia_partition_id = VMEDIA_DEVICES[device]
             try:
@@ -436,7 +438,7 @@ class RedfishOperations(object):
 
         try:
             sushy_system = self._get_sushy_system()
-            vmedia_status = sushy_system.vmedia.service_enabled
+            vmedia_status = sushy_system.vmedia
         except sushy.exceptions.SushyError as e:
             msg = (self._('The vmedia is not found. Error '
                           '%(error)s') %
@@ -457,8 +459,6 @@ class RedfishOperations(object):
                    {'parameter': 'ServiceEnabled',
                     'value': set_vmedia_state})
             raise exception.InvalidInputError(msg)
-        data = collections.defaultdict(dict)
         sushy_system = self._get_sushy_system()
-        data['VirtualMediaConfig']['ServiceEnabled'] = set_vmedia_state
-
-        self._sushy._conn.patch(sushy_system._path, data=data)
+        sdflex_virtual_media.VirtualMedia.enable_vmedia(sushy_system,
+                                                        set_vmedia_state)
