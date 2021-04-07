@@ -41,17 +41,113 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
         self.assertEqual(
             [{'step': 'create_configuration',
               'interface': 'raid',
-              'priority': 0},
+              'priority': 0,
+              'reboot_requested': False},
              {'step': 'delete_configuration',
               'interface': 'raid',
-              'priority': 0},
+              'priority': 0,
+              'reboot_requested': False},
              {'step': 'erase_devices',
               'interface': 'deploy',
-              'priority': 0},
+              'priority': 0,
+              'reboot_requested': False},
              {'step': 'update_firmware_sum',
               'interface': 'management',
-              'priority': 0}],
+              'priority': 0,
+              'reboot_requested': False}],
             self.hardware_manager.get_clean_steps("", ""))
+
+    def test_get_deploy_steps(self):
+        _RAID_APPLY_CONFIGURATION_ARGSINFO = {
+            "raid_config": {
+                "description": "The RAID configuration to apply.",
+                "required": True,
+            },
+            "delete_existing": {
+                "description": (
+                    "Setting this to 'True' indicates to delete existing RAID "
+                    "configuration prior to creating the new configuration. "
+                    "Default value is 'True'."
+                ),
+                "required": False,
+            }
+        }
+        self.assertEqual(
+            [{
+                'step': 'apply_configuration',
+                'interface': 'raid',
+                'priority': 0,
+                'reboot_requested': False,
+                'argsinfo': _RAID_APPLY_CONFIGURATION_ARGSINFO,
+            }],
+            self.hardware_manager.get_deploy_steps("", ""))
+
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       '_create_raid_volumes')
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       'delete_configuration')
+    def test_apply_configuration_not_delete(self, delete_mock, create_mock):
+        raid_config = {
+            'logical_disks': [{
+                'size_gb': 100,
+                'raid_level': 1,
+                'physical_disks': [
+                    '5I:0:1',
+                    '5I:0:2'],
+                'controller': 'MSCC SmartRAID controller'
+            },
+            ]
+        }
+        create_mock.return_value = raid_config
+        manager = self.hardware_manager
+        ret = manager.apply_configuration({}, {}, raid_config,
+                                          delete_existing=False)
+        delete_mock.assert_not_called()
+        self.assertEqual(raid_config, ret)
+
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       '_create_raid_volumes')
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       'delete_configuration')
+    def test_apply_configuration_delete(self, delete_mock, create_mock):
+        raid_config = {
+            'logical_disks': [{
+                'size_gb': 100,
+                'raid_level': 1,
+                'physical_disks': [
+                    '5I:0:1',
+                    '5I:0:2'],
+                'controller': 'MSCC SmartRAID controller'
+            }]
+        }
+        create_mock.return_value = raid_config
+        manager = self.hardware_manager
+        ret = manager.apply_configuration({}, {}, raid_config,
+                                          delete_existing=True)
+        delete_mock.assert_called()
+        self.assertEqual(raid_config, ret)
+
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       '_create_raid_volumes')
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       'delete_configuration')
+    def test_apply_configuration_delete_default(self, delete_mock,
+                                                create_mock):
+        raid_config = {
+            'logical_disks': [{
+                'size_gb': 100,
+                'raid_level': 1,
+                'physical_disks': [
+                    '5I:0:1',
+                    '5I:0:2'],
+                'controller': 'MSCC SmartRAID controller'
+            }]
+        }
+        create_mock.return_value = raid_config
+        manager = self.hardware_manager
+        ret = manager.apply_configuration({}, {}, raid_config)
+        delete_mock.assert_called()
+        self.assertEqual(raid_config, ret)
 
     @mock.patch.object(os.path, 'exists')
     def test_is_ssacli_present(self, os_path_mock):
@@ -139,12 +235,37 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
         ret = manager._is_ssa_ctrl_present()
         self.assertEqual(False, ret)
 
+    def test_create_configuration_no_raid_config(self):
+        node = {'target_raid_config': {}}
+        manager = self.hardware_manager
+        ret = manager.create_configuration(node, {})
+        self.assertEqual({}, ret)
+
+    @mock.patch.object(hardware_manager.SDFlexHardwareManager,
+                       '_create_raid_volumes')
+    def test_create_configuration_raid_config(self, create_mock):
+        target_raid_config = {
+            'logical_disks': [{
+                'size_gb': 100,
+                'raid_level': 1,
+                'physical_disks': [
+                    '5I:0:1',
+                    '5I:0:2'],
+                'controller': 'MSCC SmartRAID controller'
+            }]
+        }
+        node = {'target_raid_config': target_raid_config}
+        create_mock.return_value = target_raid_config
+        manager = self.hardware_manager
+        ret = manager.create_configuration(node, {})
+        self.assertEqual(target_raid_config, ret)
+
     @mock.patch.object(hpssa_manager, 'create_configuration')
     @mock.patch.object(hardware_manager.SDFlexHardwareManager,
                        '_is_ssa_ctrl_present')
     @mock.patch.object(hardware_manager.SDFlexHardwareManager,
                        '_is_storcli_ctrl_present')
-    def test_create_configuration_invalid_controller(
+    def test__create_raid_volumes_invalid_controller(
             self, storcli_ctrl_present, ssa_ctrl_present, hpssa_create_mock):
         ssa_ctrl_present.return_value = True
         storcli_ctrl_present.return_value = True
@@ -153,8 +274,7 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
                                "controller": 'invalid ctrl',
                                "physical_disks": ['252:0']}]}
         manager = self.hardware_manager
-        node = {'target_raid_config': raid_config}
-        ret = manager.create_configuration(node, [])
+        ret = manager._create_raid_volumes(raid_config)
         self.assertEqual({'logical_disks': []}, ret)
 
     @mock.patch.object(hpssa_manager, 'create_configuration')
@@ -162,14 +282,14 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
                        '_is_ssa_ctrl_present')
     @mock.patch.object(hardware_manager.SDFlexHardwareManager,
                        '_is_storcli_ctrl_present')
-    def test_create_configuration_ssa(self, storcli_ctrl_present,
+    def test__create_raid_volumes_ssa(self, storcli_ctrl_present,
                                       ssa_ctrl_present, hpssa_create_mock):
         ssa_ctrl_present.return_value = True
         storcli_ctrl_present.return_value = False
         hpssa_create_mock.return_value = 'current-config'
         manager = self.hardware_manager
-        node = {'target_raid_config': {'foo': 'bar'}}
-        ret = manager.create_configuration(node, [])
+        target_raid_config = {'foo': 'bar'}
+        ret = manager._create_raid_volumes(target_raid_config)
         hpssa_create_mock.assert_called_once_with(raid_config={'foo': 'bar'})
         self.assertEqual('current-config', ret)
 
@@ -178,7 +298,7 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
                        '_is_ssa_ctrl_present')
     @mock.patch.object(hardware_manager.SDFlexHardwareManager,
                        '_is_storcli_ctrl_present')
-    def test_create_configuration_ssa_controller(self, storcli_ctrl_present,
+    def test__create_raid_volumes_ssa_controller(self, storcli_ctrl_present,
                                                  ssa_ctrl_present,
                                                  hpssa_create_mock):
         ssa_ctrl_present.return_value = True
@@ -189,8 +309,7 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
                                "controller": 'MSCC SmartRAID',
                                "physical_disks": ['252:0']}]}
         manager = self.hardware_manager
-        node = {'target_raid_config': raid_config}
-        ret = manager.create_configuration(node, [])
+        ret = manager._create_raid_volumes(raid_config)
         hpssa_create_mock.assert_called_once_with(raid_config=raid_config)
         self.assertEqual('current-config', ret)
 
@@ -199,15 +318,15 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
                        '_is_ssa_ctrl_present')
     @mock.patch.object(hardware_manager.SDFlexHardwareManager,
                        '_is_storcli_ctrl_present')
-    def test_create_configuration_storcli(self, storcli_ctrl_present,
+    def test__create_raid_volumes_storcli(self, storcli_ctrl_present,
                                           ssa_ctrl_present,
                                           storcli_create_mock):
         ssa_ctrl_present.return_value = False
         storcli_ctrl_present.return_value = True
         storcli_create_mock.return_value = 'current-config'
         manager = self.hardware_manager
-        node = {'target_raid_config': {'foo': 'bar'}}
-        ret = manager.create_configuration(node, [])
+        target_raid_config = {'foo': 'bar'}
+        ret = manager._create_raid_volumes(target_raid_config)
         storcli_create_mock.assert_called_once_with(raid_config={'foo': 'bar'})
         self.assertEqual('current-config', ret)
 
@@ -217,7 +336,7 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
                        '_is_ssa_ctrl_present')
     @mock.patch.object(hardware_manager.SDFlexHardwareManager,
                        '_is_storcli_ctrl_present')
-    def test_create_configuration_ssa_storcli(self, storcli_ctrl_present,
+    def test__create_raid_volumes_ssa_storcli(self, storcli_ctrl_present,
                                               ssa_ctrl_present,
                                               storcli_create_mock,
                                               hpssa_create_mock):
@@ -226,15 +345,15 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
         hpssa_create_mock.return_value = {'logical_disks': 'current_config'}
         storcli_create_mock.return_value = {'logical_disks': 'current_config'}
         manager = self.hardware_manager
-        node = {'target_raid_config': {
+        target_raid_config = {
             "logical_disks": [
                 {"size_gb": 100, "raid_level": '0', "controller": 0,
                  "physical_disks": ['252:0']},
                 {"size_gb": 'MAX', "raid_level": '0'},
                 {"size_gb": 100, "raid_level": '0',
                  "controller": 'MSCC SmartRAID',
-                 "physical_disks": ['252:2']}]}}
-        ret = manager.create_configuration(node, [])
+                 "physical_disks": ['252:2']}]}
+        ret = manager._create_raid_volumes(target_raid_config)
         storcli_create_mock.assert_called_once_with(raid_config={
             "logical_disks": [{"size_gb": 100, "raid_level": '0',
                                "controller": 0, "physical_disks": ['252:0']}]})
@@ -249,15 +368,15 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
                        '_is_ssa_ctrl_present')
     @mock.patch.object(hardware_manager.SDFlexHardwareManager,
                        '_is_storcli_ctrl_present')
-    def test_create_configuration_no_controller(self, storcli_ctrl_present,
+    def test__create_raid_volumes_no_controller(self, storcli_ctrl_present,
                                                 ssa_ctrl_present):
         ssa_ctrl_present.return_value = False
         storcli_ctrl_present.return_value = False
         manager = self.hardware_manager
-        node = {'target_raid_config': {
+        target_raid_config = {
             "logical_disks": [{"size_gb": 100, "raid_level": '0',
-                "controller": 0, "physical_disks": ['252:0']}]}}
-        ret = manager.create_configuration(node, [])
+                               "controller": 0, "physical_disks": ['252:0']}]}
+        ret = manager._create_raid_volumes(target_raid_config)
         self.assertEqual(ret, None)
 
     @mock.patch.object(hpssa_manager, 'delete_configuration')

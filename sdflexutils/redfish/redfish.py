@@ -18,9 +18,9 @@ import collections
 from sdflexutils import exception
 from sdflexutils import log
 from sdflexutils.redfish import main
-from sdflexutils.redfish.resources.system import constants as sys_cons
 from sdflexutils.redfish.resources.system import (
     virtual_media as sdflex_virtual_media)
+from sdflexutils.redfish.resources.system import constants as sys_cons
 import sushy
 from sushy import auth
 from sushy.resources.manager import virtual_media

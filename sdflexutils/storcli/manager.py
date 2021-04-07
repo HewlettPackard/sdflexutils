@@ -106,8 +106,8 @@ def _change_controller_type(raid_config, type):
         controller value.
     """
     for ld in raid_config['logical_disks']:
-            if 'controller' in ld.keys():
-                ld['controller'] = type(ld['controller'])
+        if 'controller' in ld.keys():
+            ld['controller'] = type(ld['controller'])
     return raid_config
 
 

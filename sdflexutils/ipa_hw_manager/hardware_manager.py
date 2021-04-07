@@ -21,9 +21,27 @@ from ironic_python_agent import hardware
 from sdflexutils import exception
 from sdflexutils.hpssa import manager as hpssa_manager
 from sdflexutils.hpssa import objects as hpssa_objects
+from sdflexutils import log
 from sdflexutils.storcli import manager as storcli_manager
 from sdflexutils.storcli import storcli
 from sdflexutils.sum import sum_controller
+
+LOG = log.get_logger(__name__)
+
+_RAID_APPLY_CONFIGURATION_ARGSINFO = {
+    "raid_config": {
+        "description": "The RAID configuration to apply.",
+        "required": True,
+    },
+    "delete_existing": {
+        "description": (
+            "Setting this to 'True' indicates to delete existing RAID "
+            "configuration prior to creating the new configuration. "
+            "Default value is 'True'."
+        ),
+        "required": False,
+    }
+}
 
 
 class SDFlexHardwareManager(hardware.GenericHardwareManager):
@@ -44,21 +62,88 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
         :returns: A list of dictionaries, each item containing the step name,
             interface and priority for the clean step.
         """
-        return [{'step': 'create_configuration',
-                 'interface': 'raid',
-                 'priority': 0},
-                {'step': 'delete_configuration',
-                 'interface': 'raid',
-                 'priority': 0},
-                {'step': 'erase_devices',
-                 'interface': 'deploy',
-                 'priority': 0},
-                {'step': 'update_firmware_sum',
-                 'interface': 'management',
-                 'priority': 0}]
+        return [
+            {
+                'step': 'create_configuration',
+                'interface': 'raid',
+                'priority': 0,
+                'reboot_requested': False
+            },
+            {
+                'step': 'delete_configuration',
+                'interface': 'raid',
+                'priority': 0,
+                'reboot_requested': False
+            },
+            {
+                'step': 'erase_devices',
+                'interface': 'deploy',
+                'priority': 0,
+                'reboot_requested': False
+            },
+            {
+                'step': 'update_firmware_sum',
+                'interface': 'management',
+                'priority': 0,
+                'reboot_requested': False
+            }
+        ]
+
+    def get_deploy_steps(self, node, ports):
+        """Return the deploy steps supported by this hardware manager.
+
+        This method returns the deploy steps that are supported by
+        proliant hardware manager.  This method is invoked on every
+        hardware manager by Ironic Python Agent to give this information
+        back to Ironic.
+
+        :param node: A dictionary of the node object
+        :param ports: A list of dictionaries containing information of ports
+            for the node
+        :returns: A list of dictionaries, each item containing the step name,
+            interface, priority, reboot_requested and
+            argsinfo for the deploy step.
+        """
+        return [
+            {
+                'step': 'apply_configuration',
+                'interface': 'raid',
+                'priority': 0,
+                'reboot_requested': False,
+                'argsinfo': _RAID_APPLY_CONFIGURATION_ARGSINFO,
+            }
+        ]
 
     def evaluate_hardware_support(cls):
         return hardware.HardwareSupport.SERVICE_PROVIDER
+
+    def apply_configuration(self, node, ports, raid_config,
+                            delete_existing=True):
+        """Apply RAID configuration.
+
+        :param node: A dictionary of the node object.
+        :param ports: A list of dictionaries containing information
+                      of ports for the node.
+        :param raid_config: The configuration to apply.
+        :param delete_existing: Whether to delete the existing configuration.
+        :returns: The current RAID configuration of the below format.
+            raid_config = {
+                'logical_disks': [{
+                    'size_gb': 100,
+                    'raid_level': 1,
+                    'physical_disks': [
+                        '5I:0:1',
+                        '5I:0:2'],
+                    'controller': 'MSCC SmartRAID controller'
+                    },
+                ]
+            }
+        """
+        if delete_existing:
+            self.delete_configuration(node, ports)
+        LOG.debug("Creating raid with configuration %(raid_config)s",
+                  {'raid_config': raid_config})
+        return self._create_raid_volumes(raid_config)
 
     def _is_ssacli_present(self):
         if os.path.exists("/usr/sbin/ssacli"):
@@ -92,15 +177,13 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
             return False
         return True
 
-    def create_configuration(self, node, ports):
-        """Create RAID configuration on the bare metal.
+    def _create_raid_volumes(self, target_raid_config):
+        """Utility function that creates RAID.
 
-        This method creates the desired RAID configuration as read from
-        node['target_raid_config'].
+        This method separates out SSA and Storcli RAID volumes from
+        target_raid_config and creates them on respective controllers.
 
-        :param node: A dictionary of the node object
-        :param ports: A list of dictionaries containing information of ports
-            for the node
+        :param target_raid_config: The RAID configuration requested.
         :returns: The current RAID configuration of the below format.
             raid_config = {
                 'logical_disks': [{
@@ -114,7 +197,6 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
                 ]
             }
         """
-        target_raid_config = node.get('target_raid_config', {}).copy()
         # Check if SSA controller is present
         if self._is_ssa_ctrl_present():
             # Check if storcli controller is present
@@ -150,11 +232,11 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
                         hpssa_raid_config['logical_disks'].append(ld)
 
                 # Create all SSA controller logical volumes
-                if hpssa_raid_config['logical_disks'] != []:
+                if hpssa_raid_config['logical_disks']:
                     hpssa_raid_config = hpssa_manager.create_configuration(
                         raid_config=hpssa_raid_config)
                 # Create all storcli controller logical volumes
-                if storcli_raid_config['logical_disks'] != []:
+                if storcli_raid_config['logical_disks']:
                     storcli_raid_config = storcli_manager.create_configuration(
                         raid_config=storcli_raid_config)
                 ret = {}
@@ -166,6 +248,36 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
             # Only storli controller is present in the system
             return storcli_manager.create_configuration(
                 raid_config=target_raid_config)
+
+    def create_configuration(self, node, ports):
+        """Create RAID configuration on the bare metal.
+
+        This method creates the desired RAID configuration as read from
+        node['target_raid_config'].
+
+        :param node: A dictionary of the node object
+        :param ports: A list of dictionaries containing information of ports
+            for the node
+        :returns: The current RAID configuration of the below format.
+            raid_config = {
+                'logical_disks': [{
+                    'size_gb': 100,
+                    'raid_level': 1,
+                    'physical_disks': [
+                        '5I:0:1',
+                        '5I:0:2'],
+                    'controller': 'MSCC SmartRAID controller'
+                    },
+                ]
+            }
+        """
+        target_raid_config = node.get('target_raid_config', {}).copy()
+        if not target_raid_config:
+            LOG.debug('No target_raid_config found')
+            return {}
+        LOG.debug("Creating raid with configuration %(raid_config)s",
+                  {'raid_config': target_raid_config})
+        return self._create_raid_volumes(target_raid_config)
 
     def delete_configuration(self, node, ports):
         """Deletes RAID configuration on the bare metal.

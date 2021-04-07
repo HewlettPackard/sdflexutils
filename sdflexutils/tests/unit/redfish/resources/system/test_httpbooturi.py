@@ -13,11 +13,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import json
 import collections
-import mock
-from sdflexutils import exception
+import json
 
+import mock
 from sdflexutils.redfish.resources.system import httpbooturi as http_boot_uri
 import testtools
 

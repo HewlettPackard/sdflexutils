@@ -14,13 +14,12 @@
 
 __author__ = 'HPE'
 
-from sushy.resources import base
-from sushy.resources.system import system
-from sushy import utils as sushy_utils
-
 from sdflexutils.redfish.resources.system import httpbooturi
 from sdflexutils.redfish.resources.system import secure_boot
 from sdflexutils.redfish import utils
+from sushy.resources import base
+from sushy.resources.system import system
+from sushy import utils as sushy_utils
 
 
 class HPESystem(system.System):
