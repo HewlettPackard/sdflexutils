@@ -279,11 +279,13 @@ class ManagerTestCases(testtools.TestCase):
                                     raid_constants.CREATE_RAID_SUCCESS,
                                     raid_constants.C0_VALL_SHOW_ALL_R5_WITH_PD]
 
-        manager.create_configuration(raid_info)
+        ret = manager.create_configuration(raid_info)
 
         storcli_mock.assert_any_call("/c0", "add", "vd", "type=raid5",
                                      "size=60gb",
                                      "drives=252:0,252:1,252:2,252:3", "J")
+        self.assertEqual(ret['logical_disks'][0]['root_device_hint']['serial'],
+                         '600605b00cb1675024eecd050ebf68ce')
 
     @mock.patch.object(storcli, '_storcli', autospec=True)
     @mock.patch.object(disk_allocator, 'get_supported_controllers')
