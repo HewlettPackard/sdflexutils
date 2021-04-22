@@ -58,27 +58,22 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
             self.hardware_manager.get_clean_steps("", ""))
 
     def test_get_deploy_steps(self):
-        _RAID_APPLY_CONFIGURATION_ARGSINFO = {
-            "raid_config": {
-                "description": "The RAID configuration to apply.",
-                "required": True,
-            },
-            "delete_existing": {
-                "description": (
-                    "Setting this to 'True' indicates to delete existing RAID "
-                    "configuration prior to creating the new configuration. "
-                    "Default value is 'True'."
-                ),
-                "required": False,
-            }
-        }
         self.assertEqual(
             [{
                 'step': 'apply_configuration',
                 'interface': 'raid',
                 'priority': 0,
                 'reboot_requested': False,
-                'argsinfo': _RAID_APPLY_CONFIGURATION_ARGSINFO,
+                'argsinfo': (
+                    hardware_manager._RAID_APPLY_CONFIGURATION_ARGSINFO),
+            },
+                {
+                'step': 'flash_firmware_sum',
+                'interface': 'management',
+                'priority': 0,
+                'reboot_requested': False,
+                'argsinfo': (
+                    hardware_manager._FIRMWARE_UPDATE_SUM_ARGSINFO),
             }],
             self.hardware_manager.get_deploy_steps("", ""))
 
@@ -495,7 +490,24 @@ class SDFlexHardwareManagerTestCase(testtools.TestCase):
     @mock.patch.object(sum_controller, 'update_firmware')
     def test_update_firmware_sum(self, update_mock):
         update_mock.return_value = "log files"
-        node = {'foo': 'bar'}
+        url = 'http://1.2.3.4/SPP.iso'
+        checksum = '1234567890'
+        clean_step = {
+            'interface': 'management',
+            'step': 'update_firmware_sum',
+            'args': {'url': url,
+                     'checksum': checksum}}
+        node = {'clean_step': clean_step}
         ret = self.hardware_manager.update_firmware_sum(node, "")
-        update_mock.assert_called_once_with(node)
+        update_mock.assert_called_once_with(node, url, checksum)
+        self.assertEqual('log files', ret)
+
+    @mock.patch.object(sum_controller, 'update_firmware')
+    def test_flash_firmware_sum(self, update_mock):
+        update_mock.return_value = "log files"
+        url = 'http://1.2.3.4/SPP.iso'
+        checksum = '1234567890'
+        node = {'foo': 'bar'}
+        ret = self.hardware_manager.flash_firmware_sum(node, "", url, checksum)
+        update_mock.assert_called_once_with(node, url, checksum)
         self.assertEqual('log files', ret)

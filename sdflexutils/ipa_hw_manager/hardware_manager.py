@@ -43,6 +43,21 @@ _RAID_APPLY_CONFIGURATION_ARGSINFO = {
     }
 }
 
+_FIRMWARE_UPDATE_SUM_ARGSINFO = {
+    'url': {
+        'description': (
+            "The image location for HPE Superdome Flex I/O Service Pack ISO."
+        ),
+        'required': True,
+    },
+    'checksum': {
+        'description': (
+            "The md5 checksum of the SPP image file."
+        ),
+        'required': True,
+    }
+}
+
 
 class SDFlexHardwareManager(hardware.GenericHardwareManager):
 
@@ -111,6 +126,13 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
                 'priority': 0,
                 'reboot_requested': False,
                 'argsinfo': _RAID_APPLY_CONFIGURATION_ARGSINFO,
+            },
+            {
+                'step': 'flash_firmware_sum',
+                'interface': 'management',
+                'priority': 0,
+                'reboot_requested': False,
+                'argsinfo': _FIRMWARE_UPDATE_SUM_ARGSINFO,
             }
         ]
 
@@ -327,4 +349,25 @@ class SDFlexHardwareManager(hardware.GenericHardwareManager):
         :raises: SUMOperationError, when the SUM based firmware update
             operation on the node fails.
         """
-        return sum_controller.update_firmware(node)
+        url = node['clean_step']['args'].get('url')
+        checksum = node['clean_step']['args'].get('checksum')
+        return sum_controller.update_firmware(node, url, checksum)
+
+    def flash_firmware_sum(self, node, port, url, checksum):
+        """Performs SUM based firmware update on the bare metal node.
+
+        This method performs firmware update on all the firmware
+        components on the bare metal node.
+        :param node: A dictionary of the node object.
+        :param port: A list of dictionaries containing information of ports
+            for the node.
+        :param url: URL for the HPE Superdome Flex I/O Service Pack ISO.
+        :param checksum: sha256 checksum of the HPE Superdome Flex
+             I/O Service Pack ISO to verify the image.
+        :returns: A string with return code and the statistics of
+            updated/failed components.
+        :raises: SUMOperationError, when the SUM based firmware update
+            operation on the node fails.
+        """
+        LOG.debug("Flashing firmware from %(url)s", {'url': url})
+        return sum_controller.update_firmware(node, url, checksum)
