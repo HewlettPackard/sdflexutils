@@ -1,4 +1,4 @@
-# Copyright 2017-2020 Hewlett Packard Enterprise Company, L.P.
+# Copyright 2017-2021 Hewlett Packard Enterprise Company, L.P.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -160,8 +160,9 @@ class SUMFirmwareUpdateTest(testtools.TestCase):
         mkdtemp_mock.return_value = "/tempdir"
         null_output = ["", ""]
         execute_mock.side_effect = [null_output, null_output]
-
-        ret_val = sum_controller.update_firmware(self.node)
+        url = self.node['clean_step']['args'].get('url')
+        checksum = self.node['clean_step']['args'].get('checksum')
+        ret_val = sum_controller.update_firmware(self.node, url, checksum)
 
         execute_mock.assert_any_call('mount', "/tmp/spp_iso",
                                      "/tempdir")
@@ -180,9 +181,11 @@ class SUMFirmwareUpdateTest(testtools.TestCase):
                  "HEAD request.")
         validate_href_mock.side_effect = exception.ImageRefValidationFailed(
             reason=value, image_href=invalid_file_path)
-
+        url = self.node['clean_step']['args'].get('url')
+        checksum = self.node['clean_step']['args'].get('checksum')
         exc = self.assertRaises(exception.SUMOperationError,
-                                sum_controller.update_firmware, self.node)
+                                sum_controller.update_firmware,
+                                self.node, url, checksum)
         self.assertIn(value, str(exc))
 
     @mock.patch.object(utils, 'download_href')
@@ -201,8 +204,11 @@ class SUMFirmwareUpdateTest(testtools.TestCase):
         msg = ("An error occurred while performing SUM based firmware "
                "update, reason: Downloading image href http://1.1.1.1/spp "
                "failed, reason: Failed")
+        url = self.node['clean_step']['args'].get('url')
+        checksum = self.node['clean_step']['args'].get('checksum')
         exc = self.assertRaises(exception.SUMOperationError,
-                                sum_controller.update_firmware, self.node)
+                                sum_controller.update_firmware,
+                                self.node, url, checksum)
         self.assertEqual(msg, str(exc))
 
     @mock.patch.object(utils, 'download_href')
@@ -225,9 +231,11 @@ class SUMFirmwareUpdateTest(testtools.TestCase):
 
         verify_image_mock.side_effect = exception.ImageRefValidationFailed(
             reason=value, image_href='http://1.2.3.4/SPP.iso')
-
+        url = self.node['clean_step']['args'].get('url')
+        checksum = self.node['clean_step']['args'].get('checksum')
         self.assertRaisesRegex(exception.SUMOperationError, value,
-                               sum_controller.update_firmware, self.node)
+                               sum_controller.update_firmware,
+                               self.node, url, checksum)
 
         verify_image_mock.assert_called_once_with(
             '/tmp/spp_iso', '1234567890')
@@ -252,10 +260,12 @@ class SUMFirmwareUpdateTest(testtools.TestCase):
         rsp = b'abc'
         response.content = rsp
         execute_mock.side_effect = processutils.ProcessExecutionError
-
+        url = self.node['clean_step']['args'].get('url')
+        checksum = self.node['clean_step']['args'].get('checksum')
         msg = ("Unable to mount Custom ISO /tmp/spp_iso")
         exc = self.assertRaises(exception.SUMOperationError,
-                                sum_controller.update_firmware, self.node)
+                                sum_controller.update_firmware,
+                                self.node, url, checksum)
         self.assertIn(msg, str(exc))
 
     @mock.patch.object(sum_controller,

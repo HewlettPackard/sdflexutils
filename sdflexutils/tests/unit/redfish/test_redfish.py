@@ -426,7 +426,7 @@ class RedfishOperationsTestCase(testtools.TestCase):
         self.sdflex_client.set_http_boot_uri('http://1.2.3.4/bootx64.efi')
         http_boot_uri_mock = self.sushy.get_system.return_value.http_boot_uri
         http_boot_uri_mock.set_http_boot_uri.assert_called_once_with(
-                'http://1.2.3.4/bootx64.efi')
+            'http://1.2.3.4/bootx64.efi')
 
     @mock.patch.object(redfish.RedfishOperations, '_get_sushy_system')
     def test_set_http_boot_uri_error(self, get_system_mock):
