@@ -1,4 +1,4 @@
-# Copyright 2017-2020 Hewlett Packard Enterprise Company, L.P.
+# Copyright 2017-2021 Hewlett Packard Enterprise Company, L.P.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -142,7 +142,7 @@ def _parse_sum_ouput(exit_code):
         return "UPDATE STATUS: UNKNOWN"
 
 
-def update_firmware(node):
+def update_firmware(node, url, checksum):
     """Performs SUM based firmware update on the node.
 
     This method performs SUM firmware update by mounting the
@@ -157,8 +157,6 @@ def update_firmware(node):
         or when the image validation fails.
     """
     # Validates the http image reference for SUM update ISO.
-    url = node['clean_step']['args'].get('url')
-    checksum = node['clean_step']['args'].get('checksum')
     try:
         utils.validate_href(url)
         rsp = utils.download_href(url)
