@@ -1,5 +1,5 @@
 # Copyright 2015 Hewlett-Packard Development Company, L.P.
-# Copyright 2019 Hewlett Packard Enterprise Development LP
+# Copyright 2019-2021 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -281,6 +281,9 @@ def create_configuration(raid_config):
         # This helps uniquely identifying a logical drive.
         # Used in disk_allocator to share physical drives
         logical_disk['volume_name'] = new_volume
+        ld_serial = stdout_json['Controllers'][0]['Response Data'][
+            'VD{} Properties'.format(new_volume.split('v')[1])]['SCSI NAA Id']
+        logical_disk['root_device_hint'] = {'serial': ld_serial}
         temp_raid_config['logical_disks'].append(logical_disk)
 
     raid_config = _change_controller_type(raid_config, str)
