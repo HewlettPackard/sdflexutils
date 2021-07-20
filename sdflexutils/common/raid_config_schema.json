@@ -44,8 +44,8 @@
                     },
                     "interface_type": {
                         "type": "string",
-                        "enum": [ "sata", "scsi", "sas" ],
-                        "description": "Specifies the interface type of disk. Valid values are 'sata', 'scsi' and 'sas'. Optional."
+                        "enum": [ "sata", "scsi", "sas", "nvme" ],
+                        "description": "Specifies the interface type of disk. Valid values are 'sata', 'scsi', 'sas' and 'nvme'. Optional."
                     },
                     "number_of_physical_disks": {
                         "type": "integer",
