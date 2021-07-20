@@ -15,6 +15,7 @@
 INTERFACE_TYPE_SAS = 'sas'
 INTERFACE_TYPE_SCSI = 'scsi'
 INTERFACE_TYPE_SATA = 'sata'
+INTERFACE_TYPE_NVME = 'nvme'
 
 DISK_TYPE_HDD = 'hdd'
 DISK_TYPE_SSD = 'ssd'
@@ -37,18 +38,24 @@ RAID_LEVEL_HPSSA_TO_INPUT_MAPPING = {
 INTERFACE_TYPE_MAP = {'SCSI': INTERFACE_TYPE_SCSI,
                       'SAS': INTERFACE_TYPE_SAS,
                       'SATA': INTERFACE_TYPE_SATA,
+                      'NVME': INTERFACE_TYPE_NVME,
                       'SATASSD': INTERFACE_TYPE_SATA,
                       'SASSSD': INTERFACE_TYPE_SAS,
+                      'NVMESSD': INTERFACE_TYPE_NVME,
                       'Solid State SAS': INTERFACE_TYPE_SAS,
-                      'Solid State SATA': INTERFACE_TYPE_SATA}
+                      'Solid State SATA': INTERFACE_TYPE_SATA,
+                      'Solid State NVME': INTERFACE_TYPE_NVME}
 
 DISK_TYPE_MAP = {'SCSI': DISK_TYPE_HDD,
                  'SAS': DISK_TYPE_HDD,
                  'SATA': DISK_TYPE_HDD,
+                 'NVME': DISK_TYPE_HDD,
                  'SATASSD': DISK_TYPE_SSD,
                  'SASSSD': DISK_TYPE_SSD,
+                 'NVMESSD': DISK_TYPE_SSD,
                  'Solid State SAS': DISK_TYPE_SSD,
-                 'Solid State SATA': DISK_TYPE_SSD}
+                 'Solid State SATA': DISK_TYPE_SSD,
+                 'Solid State NVME': DISK_TYPE_SSD}
 
 RAID_LEVEL_MIN_DISKS = {RAID_0: 1,
                         RAID_1: 2,
