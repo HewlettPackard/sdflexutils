@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -15,6 +15,8 @@
 __author__ = 'HPE'
 import collections
 
+from sdflexutils import exception
+
 
 class VirtualMedia(object):
     """Class that extends the functionality of Virtual Media"""
@@ -28,3 +30,20 @@ class VirtualMedia(object):
     @staticmethod
     def insert_vmedia_cifs(sushy_system, target_uri, data):
         sushy_system._conn.post(target_uri, data=data)
+
+    @staticmethod
+    def get_vmedia_device_status(sushy_system, device):
+        """Gets the status of the given vmedia device
+
+        :param sushy_system: sushy system object
+        :param device: vmedia device
+        :raises: SDFlexError if redfish status_code for get call is 200
+        """
+
+        target_uri = '/'+sushy_system._path+'/VirtualMedia/'+str(device)
+        status_code = sushy_system._conn.get(target_uri).status_code
+        if (status_code != 200):
+            msg = ('The get call got a redfish response with Error code:'
+                   + str(status_code))
+            raise exception.SDFlexError(msg)
+        return sushy_system._conn.get(target_uri).text
