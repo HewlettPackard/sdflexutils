@@ -1,4 +1,4 @@
-# Copyright 2019-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2019-2022 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -463,6 +463,22 @@ class RedfishOperations(object):
         sushy_system = self._get_sushy_system()
         sdflex_virtual_media.VirtualMedia.enable_vmedia(sushy_system,
                                                         set_vmedia_state)
+
+    def get_vmedia_device_status(self, device="cd0"):
+        """Set's the Virtual Media state on the Sdflex Machine
+
+        :params device: virtual media device
+        :raises : SdflexError if not a valid vmedia device value is passed
+        """
+        valid_devices = {'cd0': 'CD0', 'cd1': 'CD1',
+                         'hd0': 'HD0', 'hd1': 'HD1'}
+        if device not in valid_devices:
+            raise exception.InvalidInputError(
+                "Invalid device. Valid devices: cd0 or cd1 or hd0 or hd1.")
+        sushy_system = self._get_sushy_system()
+        device = valid_devices.get(device)
+        return sdflex_virtual_media.VirtualMedia.get_vmedia_device_status(
+                sushy_system, device)
 
     def get_http_boot_uri(self):
         """Returns the HTTP Boot URI"""
