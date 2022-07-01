@@ -15,9 +15,6 @@
 __author__ = 'HPE'
 import collections
 
-from sdflexutils import exception
-import sushy
-
 
 class VirtualMedia(object):
     """Class that extends the functionality of Virtual Media"""
@@ -31,19 +28,3 @@ class VirtualMedia(object):
     @staticmethod
     def insert_vmedia_cifs(sushy_system, target_uri, data):
         sushy_system._conn.post(target_uri, data=data)
-
-    @staticmethod
-    def get_vmedia_device_status(sushy_system, device):
-        """Gets the status of the given vmedia device
-
-        :param sushy_system: sushy system object
-        :param device: vmedia device
-        :raises: SDFlexError if redfish status_code for get call is 200
-        """
-
-        target_uri = '/'+sushy_system._path+'/VirtualMedia/'+str(device)
-        try:
-            resp = sushy_system._conn.get(target_uri)
-            return resp.text
-        except sushy.exceptions.SushyError as e:
-            raise exception.SDFlexError(e)

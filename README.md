@@ -25,7 +25,7 @@ Usage
 For interfacing with the Superdome Flex Server, use *SDFlexClient* object:
 
     >>> from sdflexutils import client
-    >>> sdflex_client = client.SDFlexClient('10.10.1.57', 'Administrator', 'password', 'redfish/v1/Systems/Partition1')
+    >>> sdflex_client = client.SDFlexClient('https://10.10.1.57', 'administrator', 'password', 'redfish/v1/Systems/Partition0')
     >>> sdflex_client.get_host_power_status()
     'OFF'
     >>>

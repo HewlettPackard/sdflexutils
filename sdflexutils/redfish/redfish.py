@@ -14,6 +14,7 @@
 
 __author__ = 'HPE'
 import collections
+import json
 
 from sdflexutils import exception
 from sdflexutils import log
@@ -21,10 +22,10 @@ from sdflexutils.redfish import main
 from sdflexutils.redfish.resources.system import (
     virtual_media as sdflex_virtual_media)
 from sdflexutils.redfish.resources.system import constants as sys_cons
+from sdflexutils.redfish import utils
 import sushy
 from sushy import auth
 from sushy.resources.manager import virtual_media
-
 
 """
 Class specific for Redfish APIs.
@@ -47,12 +48,7 @@ GET_SECUREBOOT_CURRENT_BOOT_MAP = {
     sys_cons.SECUREBOOT_CURRENT_BOOT_DISABLED: False
 }
 
-VMEDIA_DEVICES = {
-    sys_cons.VIRTUALMEDIA_DEVICE0:
-        'redfish/v1/Systems/Partition0/VirtualMedia/CD0',
-    sys_cons.VIRTUALMEDIA_DEVICE1:
-        'redfish/v1/Systems/Partition0/VirtualMedia/CD1'
-}
+VALID_VMEDIA_DEVICES = {'cd0': 'CD0', 'cd1': 'CD1', 'hd0': 'HD0', 'hd1': 'HD1'}
 
 
 LOG = log.get_logger(__name__)
@@ -353,32 +349,26 @@ class RedfishOperations(object):
             LOG.debug(msg)
             raise exception.SDFlexError(msg)
 
-    def validate_vmedia_device(self, device):
-        if device not in VMEDIA_DEVICES:
-            msg = (self._('The "%(device)s" is not a valid vmedia device.')
-                   % {'device': device})
-            LOG.debug(msg)
-            raise exception.SDFlexError(msg)
-        else:
-            return True
-
     def eject_vmedia(self, device):
         """Ejects the iso from the vmedia
 
         :raises: SDFlexError if this function couldnot eject the vmedia
         """
-        if self.validate_vmedia_device(device):
-            vmedia_partition_id = VMEDIA_DEVICES[device]
-            try:
-                virtual_media_object = virtual_media.VirtualMedia(
-                    self._sushy._conn, vmedia_partition_id)
-                virtual_media_object.eject_media()
-            except sushy.exceptions.SushyError as e:
-                msg = (self._('The Redfish System "%(partition_id)s" was '
-                              'not found. Error %(error)s') %
-                       {'partition_id': vmedia_partition_id, 'error': str(e)})
-                LOG.debug(msg)
-                raise exception.SDFlexError(msg)
+        device_name = VALID_VMEDIA_DEVICES.get(device)
+        if not device_name:
+            raise exception.InvalidInputError(
+                "Invalid device. Valid devices: cd0 or cd1 or hd0 or hd1.")
+        vmedia_partition_id = self.get_vmedia_device_uri(device_name)
+        try:
+            virtual_media_object = virtual_media.VirtualMedia(
+                self._sushy._conn, vmedia_partition_id)
+            virtual_media_object.eject_media()
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('The Redfish System "%(partition_id)s" was '
+                          'not found. Error %(error)s') %
+                   {'partition_id': vmedia_partition_id, 'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
 
     def insert_vmedia(self, image, device, remote_server_data, inserted=True,
                       write_protected=False):
@@ -387,51 +377,55 @@ class RedfishOperations(object):
         :param image: The location of image which is on NFS/CIFS
         :remote_server_data : This dictionary contains remote image server
                               details
-        :raises: SDFlexError if this function could not eject the vmedia
+        :raises: SDFlexError if this function could not insert the vmedia
         """
+
         if not self.get_vmedia_status():
             self.enable_vmedia(True)
-        if self.validate_vmedia_device(device):
-            vmedia_partition_id = VMEDIA_DEVICES[device]
-            try:
-                virtual_media_object = virtual_media.VirtualMedia(
-                    self._sushy._conn, vmedia_partition_id)
-                if remote_server_data['remote_image_share_type'] == 'nfs':
-                    # Incase of NFS as image share type. We use sushy object
-                    # and sushy function to insert the image url into
-                    # Vmedia device
-                    virtual_media_object.insert_media(image, inserted,
-                                                      write_protected)
-                elif remote_server_data['remote_image_share_type'] == 'cifs':
-                    # Incase of CIFS  as image share type. We use
-                    # normal post to insert the image url into Vmedia device
-                    input_data = collections.defaultdict(dict)
-                    input_data['UserName'] = (
-                        remote_server_data['remote_image_user_name'])
-                    input_data['Password'] = (
-                        remote_server_data['remote_image_user_password'])
-                    input_data['Image'] = image
-                    input_data['Inserted'] = inserted
-                    input_data['WriteProtected'] = write_protected
+        device_name = VALID_VMEDIA_DEVICES.get(device)
+        if not device_name:
+            raise exception.InvalidInputError(
+                "Invalid device. Valid devices: cd0 or cd1 or hd0 or hd1.")
+        vmedia_partition_id = self.get_vmedia_device_uri(device_name)
+        try:
+            virtual_media_object = virtual_media.VirtualMedia(
+                self._sushy._conn, vmedia_partition_id)
+            if remote_server_data['remote_image_share_type'] == 'nfs':
+                # Incase of NFS as image share type. We use sushy object
+                # and sushy function to insert the image url into
+                # Vmedia device
+                virtual_media_object.insert_media(image, inserted,
+                                                  write_protected)
+            elif remote_server_data['remote_image_share_type'] == 'cifs':
+                # Incase of CIFS  as image share type. We use
+                # normal post to insert the image url into Vmedia device
+                input_data = collections.defaultdict(dict)
+                input_data['UserName'] = (
+                    remote_server_data['remote_image_user_name'])
+                input_data['Password'] = (
+                    remote_server_data['remote_image_user_password'])
+                input_data['Image'] = image
+                input_data['Inserted'] = inserted
+                input_data['WriteProtected'] = write_protected
 
-                    sushy_system = self._get_sushy_system()
-                    target_uri = virtual_media_object._actions.insert_media.target_uri  # noqa E501
-                    sdflex_virtual_media.VirtualMedia.insert_vmedia_cifs(
-                        sushy_system, target_uri, data=input_data)
-                else:
-                    msg = (self._('The %(remote_image_share_type)s is not a '
-                           'valid remote_image_share_type.') %
-                           {'remote_image_share_type': (
-                            remote_server_data['remote_image_share_type'])}
-                           )
-                    LOG.debug(msg)
-                    raise exception.SDFlexError(msg)
-            except sushy.exceptions.SushyError as e:
-                msg = (self._('The "%(device)s" is not a valid vmedia device.'
-                              'Error %(error)s')
-                       % {'device': device, 'error': str(e)})
+                sushy_system = self._get_sushy_system()
+                target_uri = virtual_media_object._actions.insert_media.target_uri  # noqa E501
+                sdflex_virtual_media.VirtualMedia.insert_vmedia_cifs(
+                    sushy_system, target_uri, data=input_data)
+            else:
+                msg = (self._('The %(remote_image_share_type)s is not a '
+                       'valid remote_image_share_type.') %
+                       {'remote_image_share_type': (
+                        remote_server_data['remote_image_share_type'])}
+                       )
                 LOG.debug(msg)
                 raise exception.SDFlexError(msg)
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('The "%(device)s" is not a valid vmedia device.'
+                          'Error %(error)s')
+                   % {'device': device, 'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
 
     def get_vmedia_status(self):
         """Returns the Virtual Media state whether it is Enabled or Disabled"""
@@ -465,20 +459,46 @@ class RedfishOperations(object):
                                                         set_vmedia_state)
 
     def get_vmedia_device_status(self, device="cd0"):
-        """Set's the Virtual Media state on the Sdflex Machine
+        """Get's the Virtual Media device status on the Sdflex Machine
 
         :params device: virtual media device
         :raises : SdflexError if not a valid vmedia device value is passed
         """
-        valid_devices = {'cd0': 'CD0', 'cd1': 'CD1',
-                         'hd0': 'HD0', 'hd1': 'HD1'}
-        if device not in valid_devices:
+
+        if device not in VALID_VMEDIA_DEVICES:
             raise exception.InvalidInputError(
                 "Invalid device. Valid devices: cd0 or cd1 or hd0 or hd1.")
         sushy_system = self._get_sushy_system()
-        device = valid_devices.get(device)
-        return sdflex_virtual_media.VirtualMedia.get_vmedia_device_status(
-                sushy_system, device)
+        device = VALID_VMEDIA_DEVICES.get(device)
+
+        vmedia_device_uri = self.get_vmedia_device_uri(device)
+
+        try:
+            resp = sushy_system._conn.get(vmedia_device_uri)
+            return resp.text
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('Error: %(error)s') %
+                   {'error': str(e)})
+            raise exception.SDFlexError(msg)
+
+    def get_vmedia_device_uri(self, device):
+        """Returns the uri of the given vmedia device"""
+
+        try:
+            sushy_system = self._get_sushy_system()
+            uri = utils.get_subresource_path_by(sushy_system, 'VirtualMedia')
+            resp = sushy_system._conn.get(uri)
+            vmedia_resp = json.loads(resp.text)
+            for val in vmedia_resp.get("Members"):
+                for key in val:
+                    if device in val[key]:
+                        return val[key]
+        except sushy.exceptions.SushyError as e:
+            msg = (self._('Not able to find find vmedia device URI. Error: '
+                          '%(error)s') %
+                   {'error': str(e)})
+            LOG.debug(msg)
+            raise exception.SDFlexError(msg)
 
     def get_http_boot_uri(self):
         """Returns the HTTP Boot URI"""
