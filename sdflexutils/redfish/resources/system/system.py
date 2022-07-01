@@ -52,3 +52,10 @@ class HPESystem(system.System):
 
         return httpbooturi.HttpBootURI(self._conn, self._path,
                                        redfish_version=self.redfish_version)
+
+    @property
+    def virtual_media(self):
+        """Property to provide reference to 'HTTPBootUri' instance"""
+
+        return virtual_media.VirtualMedia(self._conn, utils.get_subresource_path_by(self, 'VirtualMedia'),
+                                       redfish_version=self.redfish_version)
