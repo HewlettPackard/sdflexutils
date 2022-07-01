@@ -1,4 +1,4 @@
-# Copyright 2019-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2019-2022 Hewlett Packard Enterprise Development LP
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -337,14 +337,6 @@ class RedfishOperationsTestCase(testtools.TestCase):
                           self.sdflex_client.enable_vmedia,
                           'some-non-boolean')
 
-    def test_validate_vmedia_device(self):
-        device = sys_cons.VIRTUALMEDIA_DEVICE0
-        self.sdflex_client.validate_vmedia_device(device)
-
-    def test_validate_vmedia_invalid_device(self):
-        self.assertRaises(exception.SDFlexError,
-                          self.sdflex_client.validate_vmedia_device, 'cd2')
-
     @mock.patch.object(redfish.RedfishOperations, 'eject_vmedia')
     def test_eject_vmedia(self, eject_mock):
         eject_mock.return_value = None
@@ -358,7 +350,7 @@ class RedfishOperationsTestCase(testtools.TestCase):
         self.sdflex_client.eject_vmedia.assert_called_once_with('cd0')
 
     def test_eject_vmedia_invalid_device(self):
-        self.assertRaises(exception.SDFlexError,
+        self.assertRaises(exception.InvalidInputError,
                           self.sdflex_client.eject_vmedia, 'cd2')
 
     @mock.patch.object(redfish.RedfishOperations, 'get_vmedia_status')
@@ -400,7 +392,7 @@ class RedfishOperationsTestCase(testtools.TestCase):
 
     def test_insert_vmedia_invalid_device(self):
         url = "http://1.2.3.4:5678/xyz.iso"
-        self.assertRaises(exception.SDFlexError,
+        self.assertRaises(exception.InvalidInputError,
                           self.sdflex_client.insert_vmedia, url, 'device1232',
                           {'remote_image_user_name': 'guest',
                            'remote_image_user_password': 'guest',
