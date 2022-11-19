@@ -426,3 +426,11 @@ class RedfishOperationsTestCase(testtools.TestCase):
         self.assertRaises(exception.SDFlexError,
                           self.sdflex_client.set_http_boot_uri,
                           'some-non-url')
+
+    def test_get_product_name(self):
+        sushy_system_mock = self.sushy.get_system.return_value
+        type(sushy_system_mock).model = mock.PropertyMock(
+            return_value='Superdome Flex')
+        actual_model_data = self.sdflex_client.get_product_name()
+        expected = 'Superdome Flex'
+        self.assertEqual(expected, actual_model_data)

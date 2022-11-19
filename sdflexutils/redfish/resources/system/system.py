@@ -33,6 +33,7 @@ class HPESystem(system.System):
     _secure_boot = None  # ref to SecureBoot instance
 
     vmedia = base.Field(['VirtualMediaConfig', 'ServiceEnabled'])
+    model = base.Field('Model')
 
     @property
     @sushy_utils.cache_it

@@ -530,3 +530,11 @@ class RedfishOperations(object):
                    {'error': str(e)})
             LOG.debug(msg)
             raise exception.SDFlexError(msg)
+
+    def get_product_name(self):
+        """Gets the product name of the server.
+
+        :returns: server model name.
+        """
+        sushy_system = self._get_sushy_system()
+        return sushy_system.model
