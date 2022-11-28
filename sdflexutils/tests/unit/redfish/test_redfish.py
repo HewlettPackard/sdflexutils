@@ -203,7 +203,7 @@ class RedfishOperationsTestCase(testtools.TestCase):
     def test_get_pending_bios_settings(self, get_system_mock):
         with open('sdflexutils/tests/unit/redfish/json_samples/'
                   'pending_bios.json', 'r') as f:
-            jsonval = json.loads(f.read()).get("Default")
+            jsonval = json.loads(f.read())
         get_system_mock.return_value.bios.pending_attributes = jsonval
         expected = {'BootSlots': "3,5", "HThread": "on", "RASMode": "on",
                     'UrlBootFile': 'tftp://1.2.3.4/tftp/bootx.efi',
@@ -215,7 +215,7 @@ class RedfishOperationsTestCase(testtools.TestCase):
     def test_get_pending_bios_settings_allow_all(self, get_system_mock):
         with open('sdflexutils/tests/unit/redfish/'
                   'json_samples/pending_bios.json', 'r') as f:
-            jsonval = json.loads(f.read()).get("Default")
+            jsonval = json.loads(f.read())
         get_system_mock.return_value.bios.pending_attributes = jsonval
         expected = {'RASMode': 'on',
                     'BootSlots': '3,5', 'HThread': 'on',
@@ -236,7 +236,7 @@ class RedfishOperationsTestCase(testtools.TestCase):
     def test_set_bios_settings(self, get_system_mock):
         with open('sdflexutils/tests/unit/redfish/json_samples/'
                   'pending_bios.json', 'r') as f:
-            jsonval = json.loads(f.read()).get("Default")
+            jsonval = json.loads(f.read())
         get_system_mock.return_value.bios.pending_attributes = jsonval
         data = {'RASMode': 'on', 'BootSlots': '3,5', 'HThread': 'on',
                 'UrlBootFile': u'tftp://1.2.3.4/tftp/bootx.efi',
