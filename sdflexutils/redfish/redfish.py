@@ -292,8 +292,7 @@ class RedfishOperations(object):
             LOG.debug(msg)
             raise exception.SDFlexError(msg)
 
-        attributes = settings.get("Attributes")
-        return attributes
+        return settings
 
     def set_bios_settings(self, data=None):
         """Sets current BIOS settings to the provided data.
