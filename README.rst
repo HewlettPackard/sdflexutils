@@ -1,11 +1,14 @@
 sdflexutils
 ===========
 
-**sdflexutils** is a library for interfacing and managing HPE Superdome Flex
-Servers. This library is used by OpenStack Ironic hardware type
-**sdflex-redfish** for managing Superdome Flex Servers in OpenStack Ironic
-environment. This hardware type is provided by `sdflex-ironic-driver
+**sdflexutils** is a library for interfacing and managing HPE Superdome Flex 280 and
+HPE Superdome Flex Servers. This library is used by OpenStack Ironic hardware type
+**sdflex-redfish** for managing Superdome Flex 280 and Superdome Flex Servers in
+OpenStack Ironic environment. This hardware type is provided by `sdflex-ironic-driver
 <https://pypi.org/project/sdflex-ironic-driver>`_.
+
+**sdflexutils** library can also be used independently (without OpenStack Ironic) to
+perform the tasks remotely on Superdome Flex 280 and Superdome Flex servers.
 
 Installation
 ------------
